@@ -908,25 +908,45 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
      ถ้าอยากให้คอมเมนต์ของทุกคนมารวมที่เดียว ให้ทำ 4 ขั้นตอนนี้ (ฟรี ใช้เวลา ~5 นาที):
 
      1) เปิด Google Sheet ใหม่ → เมนู Extensions → Apps Script
-     2) ลบโค้ดเดิม แล้ววางโค้ดนี้:
+     2) ลบโค้ดเดิม แล้ววางโค้ดนี้ (สร้างชีต 2 แท็บอัตโนมัติ: Comments กับ Quiz):
 
-          const SH = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
-          function doPost(e) {
-            const d = JSON.parse(e.postData.contents);
-            SH.appendRow([new Date(), (d.name || "").slice(0,60), (d.text || "").slice(0,500)]);
-            return ContentService.createTextOutput(JSON.stringify({ ok: true }))
+          const SS = SpreadsheetApp.getActiveSpreadsheet();
+          function sheetOf(name, header) {
+            let sh = SS.getSheetByName(name) || SS.insertSheet(name);
+            if (sh.getLastRow() === 0 && header) sh.appendRow(header);
+            return sh;
+          }
+          function json(o) {
+            return ContentService.createTextOutput(JSON.stringify(o))
                    .setMimeType(ContentService.MimeType.JSON);
           }
+          function doPost(e) {
+            const d = JSON.parse(e.postData.contents);
+            if (d.type === "quiz") {
+              const head = ["วันเวลา", "ชื่อ", "คะแนน", "เต็ม"]
+                .concat((d.questions || []).map((q, i) => (i + 1) + ". " + q));
+              sheetOf("Quiz", head)
+                .appendRow([new Date(), d.name || "", d.score, d.total].concat(d.answers || []));
+            } else {
+              sheetOf("Comments", ["วันเวลา", "ชื่อ", "ข้อความ"])
+                .appendRow([new Date(), (d.name || "").slice(0,60), (d.text || "").slice(0,500)]);
+            }
+            return json({ ok: true });
+          }
           function doGet() {
-            const rows = SH.getDataRange().getValues().map(r => ({ at: r[0], name: r[1], text: r[2] }));
-            return ContentService.createTextOutput(JSON.stringify(rows))
-                   .setMimeType(ContentService.MimeType.JSON);
+            const sh = SS.getSheetByName("Comments");
+            if (!sh || sh.getLastRow() < 2) return json([]);
+            return json(sh.getRange(2, 1, sh.getLastRow() - 1, 3).getValues()
+                      .map(r => ({ at: r[0], name: r[1], text: r[2] })));
           }
 
      3) กด Deploy → New deployment → เลือก Web app
         · Execute as: Me    · Who has access: Anyone
         แล้วก๊อป URL ที่ได้ (ลงท้ายด้วย /exec)
      4) เอา URL มาวางที่ url ข้างล่าง แล้วเปลี่ยน enabled เป็น true
+
+     ** ถ้าแก้โค้ด Apps Script ทีหลัง ต้องกด Deploy → Manage deployments →
+        ✏️ → Version: New version → Deploy ด้วย (URL เดิมจะยังใช้ได้เหมือนเดิม) **
 
      คอมเมนต์ทุกอันจะไหลเข้า Google Sheet ของเราแบบเรียลไทม์ (เปิดดูได้ตลอด)
      และถ้าเน็ตหลุด/ส่งไม่สำเร็จ ระบบจะเก็บไว้ในเครื่องแล้วส่งซ้ำให้อัตโนมัติรอบหน้า
@@ -1146,6 +1166,24 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
         ? data.filter((r) => r && r.text).map((r) => ({ at: r.at, text: r.text, name: r.name || "", remote: true }))
         : null;
     } catch (e) { return null; }
+  }
+
+  // ส่งคำตอบควิซทั้งชุดขึ้นชีต (1 รอบที่เล่น = 1 แถว)
+  async function sendQuizToSheet() {
+    if (!remoteOn()) return;
+    const payload = {
+      type: "quiz",
+      name: lastName() || "",
+      score: state.score,
+      total: state.scorable,
+      questions: state.log.map((it) => it.q),
+      answers: state.log.map((it) => `${it.picked} ${it.ok ? "✓" : "✕"}`),
+    };
+    if ((await remotePost(payload)) === "fail") {
+      const box = loadJSON(KEY.outbox, []);
+      box.push(payload);
+      saveJSON(KEY.outbox, box);
+    }
   }
 
   // ส่งซ้ำอันที่ค้างอยู่ (เช่นตอนเน็ตหลุด)
@@ -1689,6 +1727,8 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     const hist = loadJSON(KEY.history, []);
     hist.unshift({ at: new Date().toISOString(), score: state.score, total: state.scorable, prize: state.prizeWon, items: state.log.slice() });
     saveJSON(KEY.history, hist.slice(0, 20));
+
+    sendQuizToSheet();          // ส่งคำตอบทั้ง 10 ข้อขึ้น Google Sheet ด้วย
 
     const box = $("result-answers");
     box.innerHTML = "";
