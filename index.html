@@ -932,8 +932,8 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
      และถ้าเน็ตหลุด/ส่งไม่สำเร็จ ระบบจะเก็บไว้ในเครื่องแล้วส่งซ้ำให้อัตโนมัติรอบหน้า
      ------------------------------------------------------------------------ */
   const REMOTE = {
-    enabled: true,           // ← เปลี่ยนเป็น true เมื่อวาง url แล้ว
-    url: "https://prakitthat-jir.github.io/HBD-To-Mel/",                  // ← วาง Web app URL (.../exec) ตรงนี้
+    enabled: true,            // ← เปลี่ยนเป็น true เมื่อวาง url แล้ว
+    url: "https://script.google.com/macros/s/AKfycbxnHLWN99kdN3KIOlIw9LCec5-Xph8YtkCaHBwxVIwF06xc49hr80RzKV2nFPzq7fm5Qg/exec",
     showOthers: true,         // ให้ทุกคนเห็นคอมเมนต์ของคนอื่นด้วยไหม (false = เห็นเฉพาะของตัวเอง)
   };
 
@@ -1110,17 +1110,30 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     catch (e) { storageOK = false; return false; }
   }
   /* ---- ส่ง/ดึงคอมเมนต์จากที่เก็บกลาง (ดูวิธีตั้งค่าที่ TODO 7 ด้านบน) ---- */
-  const remoteOn = () => REMOTE.enabled && /^https?:\/\//.test(REMOTE.url);
+  // URL ต้องเป็น "ที่เก็บกลาง" คนละที่กับตัวเว็บเอง
+  // (ถ้าเผลอใส่ลิงก์เว็บตัวเอง คอมเมนต์จะไม่ไปไหน — เช็คไว้กันพลาด)
+  function remoteBadUrl() {
+    if (!REMOTE.enabled) return false;
+    if (!/^https?:\/\//.test(REMOTE.url)) return true;
+    try { return new URL(REMOTE.url, location.href).origin === location.origin; }
+    catch (e) { return true; }
+  }
+  const remoteOn = () => REMOTE.enabled && !remoteBadUrl();
 
+  // คืนค่า "ok" = ยืนยันแล้วว่าถึงปลายทาง | "unverified" = ส่งออกไปแล้วแต่อ่านผลไม่ได้ | "fail" = ยังไม่ถึง
   async function remotePost(c) {
-    if (!remoteOn()) return false;
+    if (!remoteOn()) return "fail";
     try {
       // ไม่ใส่ header เพื่อให้เป็น simple request (เลี่ยง CORS preflight ของ Apps Script)
-      await fetch(REMOTE.url, { method: "POST", body: JSON.stringify(c) });
-      return true;
+      const res = await fetch(REMOTE.url, { method: "POST", body: JSON.stringify(c) });
+      if (!res.ok) return "fail";          // ไม่ 2xx = ยังไม่ถึงปลายทาง
+      // ปลายทางที่ถูกต้องต้องตอบกลับเป็น JSON ({ok:true})
+      // ถ้าได้ HTML กลับมา แปลว่า url ชี้ผิดที่ (เช่นชี้มาที่เว็บตัวเอง) — อย่าบอกว่าส่งสำเร็จ
+      try { JSON.parse(await res.text()); return "ok"; } catch (bad) { return "fail"; }
     } catch (e) {
-      try { await fetch(REMOTE.url, { method: "POST", mode: "no-cors", body: JSON.stringify(c) }); return true; }
-      catch (e2) { return false; }
+      // ติด CORS/เน็ตมีปัญหา — ลองแบบ no-cors (เขียนได้ แต่อ่านผลกลับไม่ได้)
+      try { await fetch(REMOTE.url, { method: "POST", mode: "no-cors", body: JSON.stringify(c) }); return "unverified"; }
+      catch (e2) { return "fail"; }
     }
   }
 
@@ -1141,7 +1154,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     const box = loadJSON(KEY.outbox, []);
     if (!box.length) return;
     const left = [];
-    for (const c of box) { if (!(await remotePost(c))) left.push(c); }
+    for (const c of box) { if ((await remotePost(c)) === "fail") left.push(c); }
     saveJSON(KEY.outbox, left);
   }
   setTimeout(flushOutbox, 2500);
@@ -1908,9 +1921,11 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
           คอมเมนต์ทั้งหมด (${list.length})${loading ? " · กำลังโหลดของคนอื่น…" : ""}${pending ? ` · รอส่ง ${pending} อัน` : ""}
         </p>
         ${items}
-        ${remoteOn()
-          ? `<p class="text-xs text-center mt-4" style="color:var(--muted)">☁️ คอมเมนต์ถูกส่งไปหาผู้สร้างด้วย</p>`
-          : storeNote()}
+        ${remoteBadUrl()
+          ? `<p class="text-xs text-center mt-4" style="color:var(--no)">⚠️ ตั้งค่า REMOTE.url ยังไม่ถูก — ต้องเป็น Web app URL ของ Apps Script (ลงท้าย /exec) ไม่ใช่ลิงก์เว็บนี้<br />ตอนนี้คอมเมนต์เก็บอยู่ในเครื่องเท่านั้น</p>`
+          : remoteOn()
+            ? `<p class="text-xs text-center mt-4" style="color:var(--muted)">☁️ คอมเมนต์ถูกส่งไปหาผู้สร้างด้วย</p>`
+            : storeNote()}
       `);
 
       $("cmt-send").addEventListener("click", async () => {
@@ -1928,8 +1943,11 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 
         if (remoteOn()) {
           const sent = await remotePost(entry);
-          if (!sent) { const box = loadJSON(KEY.outbox, []); box.push(entry); saveJSON(KEY.outbox, box); }
-          renderComments(sent ? "ส่งถึงผู้สร้างแล้ว ขอบคุณน้า 💗" : "บันทึกไว้แล้ว เดี๋ยวส่งให้อัตโนมัติตอนเน็ตกลับมา 📡");
+          if (sent === "fail") { const box = loadJSON(KEY.outbox, []); box.push(entry); saveJSON(KEY.outbox, box); }
+          renderComments(
+            sent === "ok" ? "ส่งถึงผู้สร้างแล้ว ขอบคุณน้า 💗"
+            : sent === "unverified" ? "ส่งออกไปแล้ว (ยืนยันผลไม่ได้ 100%) เก็บสำเนาไว้ในเครื่องด้วยแล้ว 💾"
+            : "บันทึกในเครื่องแล้ว แต่ยังส่งไม่สำเร็จ (URL ปลายทางอาจยังไม่ถูก) จะลองส่งใหม่ให้อัตโนมัติ 📡");
         } else {
           renderComments("บันทึกคอมเมนต์แล้ว ขอบคุณน้า 💗");
         }
