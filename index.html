@@ -1,0 +1,2030 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="rose">
+<head>
+<!--
+  ============================================================================
+  🎂 Happy Birthday, Mel! — Single File Web App (HTML + Tailwind CDN + Vanilla JS)
+  Developer: Pyopapaya
+
+  ✅ จุดที่ต้องแก้ก่อนส่งให้เมล (ค้นหาคำว่า "TODO" ในไฟล์นี้)
+    1. รหัสผ่านหน้าล็อก   -> CONFIG.password ในสคริปต์ด้านล่าง
+    2. รูปภาพความทรงจำ    -> ส่วน "MEMORY GALLERY" (แทน .photo-empty ด้วย <img>)
+    3. แคปชั่นใต้รูป       -> แก้ข้อความในแท็ก <p class="cap"> ของแต่ละกรอบรูป
+    4. ไฟล์เพลงพื้นหลัง    -> <source src="music.mp3">
+    5. คำอวยพรสุ่ม        -> ตัวแปร WISH_POOL
+    6. คำอวยพรหลัก        -> ตัวแปร MAIN_WISH / SHORT_WISH
+    7. คอมเมนต์ข้ามเครื่อง -> ตัวแปร REMOTE (มีคู่มือตั้งค่าเขียนไว้ตรงนั้นครบ)
+  ============================================================================
+-->
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#e11d48" />
+<title>Happy Birthday Mel 🎂</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Itim&family=Mitr:wght@300;400;500;600&family=Pacifico&display=swap" rel="stylesheet" />
+
+<style>
+/* ==========================================================================
+   1) DESIGN TOKENS — ธีมสี (สลับได้ที่ปุ่ม 🎨 มุมขวาล่าง)
+   ========================================================================== */
+:root{
+  --radius-xl: 30px; --radius-lg: 22px; --radius-md: 16px;
+  --ease: cubic-bezier(.22,1,.36,1);
+  --bounce: cubic-bezier(.34,1.56,.64,1);
+  --shadow-sm: 0 2px 10px rgba(90,25,45,.06);
+  --shadow-md: 0 18px 40px -18px rgba(120,30,60,.30);
+  --shadow-lg: 0 40px 80px -35px rgba(120,30,60,.55);
+  --ok:#15a34a; --ok-soft:#e9fbef; --no:#e5484d; --no-soft:#fff0f0;
+}
+[data-theme="rose"]{
+  --bg1:#fff8f5; --bg2:#ffe6ec; --bg3:#fff1de;
+  --primary:#e11d48; --primary-dark:#9f1239; --primary-soft:#ffe3ea;
+  --accent:#f59e0b; --text:#43161f; --muted:#8d5b67; --line:rgba(225,29,72,.14);
+}
+[data-theme="sakura"]{
+  --bg1:#fff7fb; --bg2:#ffe3f2; --bg3:#f3e8ff;
+  --primary:#ec4899; --primary-dark:#a21c6b; --primary-soft:#ffe1f0;
+  --accent:#c084fc; --text:#43163a; --muted:#93597f; --line:rgba(236,72,153,.14);
+}
+[data-theme="honey"]{
+  --bg1:#fffcf3; --bg2:#ffeecb; --bg3:#ffe4e0;
+  --primary:#e0820b; --primary-dark:#92400e; --primary-soft:#ffeecd;
+  --accent:#f43f5e; --text:#42290d; --muted:#8a6a3d; --line:rgba(224,130,11,.18);
+}
+[data-theme="mint"]{
+  --bg1:#f4fffb; --bg2:#d8f7ec; --bg3:#e6f0ff;
+  --primary:#0d9488; --primary-dark:#115e59; --primary-soft:#d7f5ef;
+  --accent:#f472b6; --text:#123833; --muted:#4d7f78; --line:rgba(13,148,136,.16);
+}
+
+/* ==========================================================================
+   2) BASE
+   ========================================================================== */
+*{ font-family:'Mitr', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+.font-cute{ font-family:'Itim', 'Mitr', cursive; }
+.font-script{ font-family:'Pacifico', cursive; }
+
+html,body{ color:var(--text); overflow-x:hidden; }
+body{ min-height:100dvh; position:relative; }
+
+/* พื้นหลังไล่สี + ลายจุดนุ่มๆ */
+body::before{
+  content:''; position:fixed; inset:0; z-index:-3; transition: background 1s var(--ease);
+  background:
+    radial-gradient(1100px 700px at 8% -12%, var(--bg2), transparent 62%),
+    radial-gradient(900px 620px at 108% 4%, var(--bg3), transparent 58%),
+    radial-gradient(700px 700px at 50% 115%, var(--primary-soft), transparent 60%),
+    linear-gradient(178deg, var(--bg1), var(--bg2));
+}
+body::after{
+  content:''; position:fixed; inset:0; z-index:-2; pointer-events:none; opacity:.5;
+  background-image: radial-gradient(rgba(255,255,255,.85) 1.1px, transparent 1.2px);
+  background-size: 24px 24px;
+  -webkit-mask-image: radial-gradient(circle at 50% 35%, #000, transparent 78%);
+          mask-image: radial-gradient(circle at 50% 35%, #000, transparent 78%);
+}
+/* ก้อนสีเบลอลอยอยู่ข้างหลัง — ตรึงไว้เฉยๆ ไม่ต้องขยับ (blur ที่ขยับตลอดทำให้เครื่องช้า) */
+.blob{ position:fixed; border-radius:50%; filter: blur(52px); opacity:.42; z-index:-2; pointer-events:none; }
+
+/* อิโมจิลอยประดับ (สร้างด้วย JS) — มีน้อยๆ พอ */
+.floater{ position:fixed; z-index:-1; pointer-events:none; opacity:.45;
+          animation: floatUp linear infinite; }
+@keyframes floatUp{
+  from{ transform: translateY(12vh) rotate(0deg); opacity:0 }
+  10%{ opacity:.55 }
+  90%{ opacity:.35 }
+  to{ transform: translateY(-115vh) rotate(320deg); opacity:0 }
+}
+@media (prefers-reduced-motion: reduce){
+  .floater,.blob{ display:none }
+  *{ animation-duration:.01ms !important; transition-duration:.08s !important }
+}
+
+/* ==========================================================================
+   3) SCREEN SYSTEM — สลับหน้าแบบลื่นไหล
+   ========================================================================== */
+.screen{ display:none; min-height:100dvh; width:100%; padding: 5.5rem 1.1rem 7rem; }
+.screen.active{ display:flex; flex-direction:column; }
+.screen.active > .wrap{ margin:auto; width:100%; animation: screenIn .55s var(--ease) both; }
+.screen.leaving > .wrap{ animation: screenOut .26s ease-in both; }
+@keyframes screenIn{ from{ opacity:0; transform: translateY(26px) scale(.985) } to{ opacity:1; transform:none } }
+@keyframes screenOut{ to{ opacity:0; transform: translateY(-18px) scale(.99) } }
+
+.stagger > *{ animation: riseIn .6s var(--ease) both; }
+.stagger > *:nth-child(1){ animation-delay:.05s } .stagger > *:nth-child(2){ animation-delay:.12s }
+.stagger > *:nth-child(3){ animation-delay:.19s } .stagger > *:nth-child(4){ animation-delay:.26s }
+.stagger > *:nth-child(5){ animation-delay:.33s } .stagger > *:nth-child(6){ animation-delay:.40s }
+@keyframes riseIn{ from{ opacity:0; transform: translateY(16px) } to{ opacity:1; transform:none } }
+
+/* ==========================================================================
+   4) COMPONENTS
+   ========================================================================== */
+.card{
+  background: rgba(255,255,255,.82);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4);
+  border:1px solid rgba(255,255,255,.85);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md), 0 1px 0 rgba(255,255,255,.9) inset;
+}
+.chip{
+  display:inline-flex; align-items:center; gap:.4rem; font-size:.78rem; font-weight:500;
+  padding:.35rem .8rem; border-radius:999px; background: var(--primary-soft); color: var(--primary-dark);
+  border:1px solid var(--line);
+}
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:.5rem; cursor:pointer;
+  font-weight:500; border-radius:999px; padding:.92rem 1.7rem; line-height:1.2; position:relative; overflow:hidden;
+  transition: transform .2s var(--bounce), box-shadow .25s var(--ease), opacity .2s, background .25s;
+}
+.btn:disabled{ opacity:.45; cursor:not-allowed; transform:none !important }
+.btn-primary{
+  color:#fff; background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  box-shadow: 0 14px 28px -12px var(--primary), inset 0 1px 0 rgba(255,255,255,.35);
+}
+.btn-primary::after{
+  content:''; position:absolute; inset:0; transform: translateX(-120%);
+  background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.4) 50%, transparent 80%);
+}
+.btn-primary:hover::after{ animation: sheen .9s var(--ease) }
+@keyframes sheen{ to{ transform: translateX(120%) } }
+.btn-primary:hover:not(:disabled){ transform: translateY(-3px) }
+.btn-primary:active:not(:disabled){ transform: translateY(0) scale(.97) }
+.btn-ghost{
+  background: rgba(255,255,255,.78); color: var(--primary-dark); border:2px solid var(--line);
+  box-shadow: var(--shadow-sm);
+}
+.btn-ghost:hover{ transform: translateY(-2px); border-color: var(--primary) }
+.btn-ghost:active{ transform: scale(.97) }
+
+.field{
+  width:100%; border-radius: var(--radius-md); background: rgba(255,255,255,.9);
+  border:2px solid var(--line); padding:.95rem 1.1rem; outline:none; color:var(--text);
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.field:focus{ border-color: var(--primary); box-shadow: 0 0 0 5px var(--primary-soft) }
+.field.shake{ animation: shake .45s }
+@keyframes shake{ 0%,100%{transform:translateX(0)} 20%{transform:translateX(-9px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(4px)} }
+
+/* ---- แถบขั้นตอนด้านบน ---- */
+#stepbar{
+  position:fixed; top:.85rem; left:50%; transform: translateX(-50%) translateY(-140%);
+  z-index:45; display:flex; gap:.3rem; padding:.4rem; border-radius:999px;
+  background: rgba(255,255,255,.75); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border:1px solid rgba(255,255,255,.9); box-shadow: var(--shadow-sm);
+  transition: transform .5s var(--bounce), opacity .4s; opacity:0;
+}
+#stepbar.show{ transform: translateX(-50%) translateY(0); opacity:1 }
+.step{ width:38px; height:34px; display:grid; place-items:center; border-radius:999px; font-size:1rem;
+       filter: grayscale(1); opacity:.4; transition: all .35s var(--bounce); }
+.step.done{ filter:none; opacity:.75 }
+.step.now{ filter:none; opacity:1; background: var(--primary-soft); transform: scale(1.12) }
+
+/* ---- ปุ่มลอยมุมขวาล่าง ---- */
+#toolbar{ position:fixed; right:.9rem; bottom:1.1rem; z-index:46; display:flex; flex-direction:column; gap:.55rem;
+          opacity:0; transform: translateY(20px); pointer-events:none; transition: all .5s var(--bounce); }
+#toolbar.show{ opacity:1; transform:none; pointer-events:auto }
+.tool{
+  width:46px; height:46px; border-radius:50%; display:grid; place-items:center; font-size:1.15rem; cursor:pointer;
+  background: rgba(255,255,255,.88); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  border:1px solid rgba(255,255,255,.9); box-shadow: var(--shadow-md);
+  transition: transform .2s var(--bounce), box-shadow .2s;
+}
+.tool:hover{ transform: translateY(-3px) scale(1.06) }
+.tool:active{ transform: scale(.9) }
+
+/* ---- ตัวเลือกคำตอบ ---- */
+.choice{
+  display:flex; align-items:center; gap:.7rem; width:100%; text-align:left; cursor:pointer; position:relative;
+  padding:.8rem .95rem; border-radius: var(--radius-md); background: rgba(255,255,255,.86);
+  border:2px solid var(--line); box-shadow: var(--shadow-sm); font-size:.96rem;
+  transition: transform .22s var(--bounce), box-shadow .22s, border-color .22s, background .22s, opacity .35s, filter .35s;
+}
+.choice .key{
+  flex:none; width:29px; height:29px; border-radius:10px; display:grid; place-items:center;
+  font-size:.8rem; font-weight:600; background: var(--primary-soft); color: var(--primary-dark);
+  transition: all .3s var(--bounce);
+}
+.choice .emo{ font-size:1.3rem; line-height:1 }
+.choice .label{ flex:1; line-height:1.45 }
+.choice .mark{ flex:none; font-size:1.1rem; opacity:0; transform: scale(.4) rotate(-30deg); transition:.4s var(--bounce) }
+.choice:hover:not(.locked){ transform: translateY(-3px); border-color: var(--primary); box-shadow: var(--shadow-md) }
+.choice:active:not(.locked){ transform: scale(.98) }
+.choice.selected{ border-color: var(--primary); background: var(--primary-soft) }
+.choice.selected .key{ background: var(--primary); color:#fff }
+.choice.locked{ cursor:default }
+.choice.correct{ border-color: var(--ok); background: var(--ok-soft);
+  animation: popCorrect .5s var(--bounce), ringPulse 1s ease-out .06s }
+.choice.correct .key{ background: var(--ok); color:#fff }
+.choice.correct .mark{ opacity:1; transform:none }
+.choice.wrong{ border-color: var(--no); background: var(--no-soft); animation: shake .45s }
+.choice.wrong .key{ background: var(--no); color:#fff }
+.choice.wrong .mark{ opacity:1; transform:none }
+.choice.dim{ opacity:.4; filter: saturate(.5) }
+@keyframes popCorrect{ 0%{transform:scale(1)} 45%{transform:scale(1.05)} 100%{transform:scale(1)} }
+@keyframes ringPulse{ from{ box-shadow:0 0 0 0 rgba(21,163,74,.45) } to{ box-shadow:0 0 0 18px rgba(21,163,74,0) } }
+
+/* แอนิเมชันตอนตัวเลือกโผล่ — ใช้คลาสแล้วถอดออกเมื่อจบ
+   (ถ้าปล่อยให้ animation ค้างไว้ มันจะทับ transform ที่ JS สั่ง = ปุ่มวิ่งหนีไม่ทำงาน) */
+.choice.enter{ animation: riseIn .45s var(--ease) both; animation-delay: var(--d, 0s) }
+
+/* ปุ่มวิ่งหนี (ข้อ 1 ตัวเลือก A) — หน้าตาเหมือนช้อยส์อื่นทุกอย่าง แค่ขยับหนีเมาส์ */
+.runaway{
+  transition: transform .22s cubic-bezier(.2,.8,.3,1), border-color .2s, background .2s !important;
+  will-change: transform; z-index:5;
+}
+.runaway.giggle::after{
+  content:'😜'; position:absolute; right:-6px; top:-14px; font-size:1.15rem;
+  animation: giggle .9s var(--bounce) forwards; pointer-events:none;
+}
+@keyframes giggle{ 0%{opacity:0; transform:scale(.4) translateY(6px)} 35%{opacity:1; transform:scale(1.1) translateY(-4px)} 100%{opacity:0; transform:scale(1) translateY(-20px)} }
+
+/* ---- กล่องเฉลย (สไลด์ลง) ---- */
+.reveal{ max-height:0; opacity:0; overflow:hidden; transition: max-height .5s var(--ease), opacity .35s ease, margin .4s var(--ease) }
+.reveal.show{ max-height:520px; opacity:1 }
+#quiz-reveal.show{ margin-top:1rem }
+.reveal-inner{
+  position:relative; overflow:hidden;
+  border-radius: var(--radius-md); padding:1rem 1.1rem; font-size:.92rem; line-height:1.7;
+  background: linear-gradient(135deg, var(--primary-soft), rgba(255,255,255,.6));
+  border:1px dashed var(--line);
+}
+/* แสงกวาดผ่านกล่องเฉลยตอนเปิด */
+.reveal.show .reveal-inner::after{
+  content:''; position:absolute; inset:0; transform: translateX(-120%); pointer-events:none;
+  background: linear-gradient(100deg, transparent 25%, rgba(255,255,255,.7) 50%, transparent 75%);
+  animation: sheen 1.15s var(--ease) .2s;
+}
+.reveal.show .reveal-inner{ animation: revealPop .55s var(--bounce) }
+@keyframes revealPop{ 0%{ transform: scale(.94) translateY(-6px) } 60%{ transform: scale(1.012) } 100%{ transform:none } }
+#quiz-reveal-title{ display:inline-flex; align-items:center; gap:.35rem }
+.reveal.show #quiz-reveal-title{ animation: stampSmall .6s var(--bounce) }
+@keyframes stampSmall{ 0%{ transform: scale(1.6) rotate(-8deg); opacity:0 } 55%{ opacity:1 } 100%{ transform:none; opacity:1 } }
+
+/* ---- เอฟเฟกต์เฉลิมฉลองตอนตอบถูก ---- */
+#stamp{ position:fixed; inset:0; z-index:65; display:grid; place-items:center; pointer-events:none }
+.stamp-inner{
+  font-size: clamp(1.5rem, 6.5vw, 2.4rem); font-weight:600; color:#fff; letter-spacing:.5px;
+  padding:.75rem 1.8rem; border-radius:999px; opacity:0;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  box-shadow: var(--shadow-lg), 0 0 0 6px rgba(255,255,255,.55);
+}
+.stamp-inner.ok{ background: linear-gradient(135deg,#22c55e,#15803d) }
+#stamp.show .stamp-inner{ animation: stampIn 1.15s var(--bounce) both }
+@keyframes stampIn{
+  0%{ opacity:0; transform: scale(.35) rotate(-14deg) }
+  22%{ opacity:1; transform: scale(1.1) rotate(-4deg) }
+  45%{ opacity:1; transform: scale(1) rotate(-4deg) }
+  70%{ opacity:1; transform: scale(1) rotate(-4deg) }
+  100%{ opacity:0; transform: scale(1.12) translateY(-34px) rotate(-4deg) }
+}
+.plusone{ position:fixed; z-index:66; font-weight:600; font-size:1.15rem; color:var(--ok); pointer-events:none;
+  text-shadow:0 2px 6px rgba(255,255,255,.9); animation: plusUp 1.1s var(--ease) forwards }
+@keyframes plusUp{ from{ opacity:1; transform: translate(-50%,0) scale(1) } to{ opacity:0; transform: translate(-50%,-52px) scale(1.45) } }
+.chip.pop{ animation: chipPop .55s var(--bounce) }
+@keyframes chipPop{ 0%{ transform:scale(1) } 40%{ transform:scale(1.2) } 100%{ transform:scale(1) } }
+.card.flash-ok{ animation: flashOk .8s ease-out }
+@keyframes flashOk{ 0%{ box-shadow: var(--shadow-md), 0 0 0 0 rgba(34,197,94,.55) } 100%{ box-shadow: var(--shadow-md), 0 0 0 26px rgba(34,197,94,0) } }
+.card.flash-no{ animation: flashNo .6s ease-out }
+@keyframes flashNo{ 0%{ box-shadow: var(--shadow-md), 0 0 0 0 rgba(229,72,77,.4) } 100%{ box-shadow: var(--shadow-md), 0 0 0 20px rgba(229,72,77,0) } }
+
+/* ---- ป้ายประกาศรางวัลหน้าแรก ---- */
+.announce{
+  position:relative; font-size:.92rem; line-height:1.75; padding:1.15rem 1.1rem .95rem;
+  border-radius: var(--radius-lg); border:2px dashed var(--line);
+  background: linear-gradient(135deg, rgba(255,255,255,.85), var(--primary-soft));
+  box-shadow: var(--shadow-sm);
+}
+.announce-badge{
+  position:absolute; top:-.8rem; left:50%; transform: translateX(-50%); white-space:nowrap;
+  font-size:.75rem; padding:.25rem .8rem; border-radius:999px; color:#fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark)); box-shadow: var(--shadow-sm);
+  animation: badgeBob 2.4s ease-in-out infinite;
+}
+@keyframes badgeBob{ 0%,100%{ transform: translateX(-50%) translateY(0) } 50%{ transform: translateX(-50%) translateY(-3px) } }
+
+/* ---- คูปองรางวัลพิเศษ (หน้าสรุป) ---- */
+.prize{
+  position:relative; padding:1.2rem 1.1rem; border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #fffdf5, var(--accent-soft, #fff4d6));
+  border:2px dashed var(--primary); box-shadow: var(--shadow-md);
+  animation: prizeIn .7s var(--bounce) both;
+}
+.prize::before, .prize::after{
+  content:''; position:absolute; top:50%; width:18px; height:18px; border-radius:50%;
+  background: var(--card, #fff); transform: translateY(-50%);
+  box-shadow: inset 0 0 0 2px var(--primary);
+}
+.prize::before{ left:-10px } .prize::after{ right:-10px }
+@keyframes prizeIn{ 0%{ opacity:0; transform: scale(.8) rotate(-4deg) } 60%{ transform: scale(1.03) rotate(1deg) } 100%{ opacity:1; transform:none } }
+
+/* ---- กล่องยืนยัน ---- */
+#modal{ position:fixed; inset:0; z-index:80; display:grid; place-items:center; padding:1.2rem }
+#modal.hidden{ display:none }
+.modal-backdrop{ position:absolute; inset:0; background: rgba(40,12,22,.5); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+  animation: fadeIn .3s ease both }
+.modal-card{ position:relative; width:100%; max-width:22rem; animation: modalIn .45s var(--bounce) both }
+@keyframes fadeIn{ from{opacity:0} to{opacity:1} }
+@keyframes modalIn{ from{ opacity:0; transform: translateY(18px) scale(.92) } to{ opacity:1; transform:none } }
+
+/* ---- แผ่นข้อมูล (ประวัติการตอบ / คอมเมนต์) ---- */
+#sheet{ position:fixed; inset:0; z-index:85; display:grid; place-items:center; padding:1rem }
+#sheet.hidden{ display:none }
+.sheet-backdrop{ position:absolute; inset:0; background:rgba(40,12,22,.5);
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); animation: fadeIn .3s ease both }
+.sheet-card{ position:relative; width:100%; max-width:30rem; max-height:84vh; display:flex; flex-direction:column;
+  animation: modalIn .45s var(--bounce) both }
+.sheet-head{ display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1.1rem 1.2rem .5rem }
+.sheet-body{ overflow-y:auto; padding:0 1.2rem 1.3rem; -webkit-overflow-scrolling:touch }
+.sheet-x{ flex:none; width:34px; height:34px; border-radius:50%; display:grid; place-items:center; cursor:pointer;
+  background: var(--primary-soft); color: var(--primary-dark); transition: transform .2s var(--bounce) }
+.sheet-x:hover{ transform: rotate(90deg) scale(1.08) }
+
+.hist{ border-radius:16px; border:1px solid var(--line); background:rgba(255,255,255,.72); padding:.85rem .95rem }
+.hist + .hist{ margin-top:.7rem }
+.hist summary{ cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center; gap:.6rem; font-size:.9rem }
+.hist summary::-webkit-details-marker{ display:none }
+.hist-row{ display:flex; gap:.55rem; align-items:flex-start; font-size:.82rem; line-height:1.6; padding:.45rem 0 }
+.hist-row + .hist-row{ border-top:1px dashed var(--line) }
+.hist-row .n{ flex:none; width:22px; height:22px; border-radius:7px; display:grid; place-items:center; font-size:.7rem;
+  background: var(--primary-soft); color: var(--primary-dark) }
+.cmt{ border-radius:16px; padding:.8rem .95rem; background:rgba(255,255,255,.75); border-left:4px solid var(--primary) }
+.cmt + .cmt{ margin-top:.6rem }
+.empty{ text-align:center; padding:1.6rem .5rem; color:var(--muted); font-size:.88rem }
+
+/* ---- แถบความคืบหน้า ---- */
+.bar{ height:9px; border-radius:999px; background: var(--primary-soft); overflow:hidden; position:relative }
+.bar > i{ display:block; height:100%; border-radius:999px; width:0;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  transition: width .6s var(--ease); position:relative; overflow:hidden; }
+.bar > i::after{
+  content:''; position:absolute; inset:0;
+  background: linear-gradient(100deg, transparent 25%, rgba(255,255,255,.6) 50%, transparent 75%);
+  animation: sheen 2.2s linear infinite;
+}
+
+/* ---- โพลารอยด์แกลเลอรี ---- */
+.polaroid{
+  background:#fff; padding:.6rem .6rem 2.4rem; border-radius:10px; box-shadow: var(--shadow-md);
+  transition: transform .35s var(--bounce), box-shadow .35s; position:relative;
+}
+.polaroid:nth-child(odd){ transform: rotate(-2.2deg) }
+.polaroid:nth-child(even){ transform: rotate(2deg) }
+.polaroid:hover{ transform: rotate(0deg) translateY(-8px) scale(1.03); box-shadow: var(--shadow-lg); z-index:2 }
+.polaroid .frame{ aspect-ratio:1/1; border-radius:6px; overflow:hidden; display:grid; place-items:center }
+.polaroid .cap{ position:absolute; left:0; right:0; bottom:.5rem; text-align:center; font-size:.76rem; color:var(--muted) }
+.photo-empty{
+  width:100%; height:100%; display:grid; place-items:center; font-size:1.7rem; color:var(--muted);
+  background: repeating-linear-gradient(45deg, #fff, #fff 9px, var(--primary-soft) 9px, var(--primary-soft) 18px);
+  border:2px dashed var(--line); border-radius:6px;
+}
+
+/* ==========================================================================
+   5) เค้ก + เทียน
+   ========================================================================== */
+.cake-stage{ position:relative; width:min(300px, 80vw); margin:0 auto; }
+.glow{
+  position:absolute; left:50%; top:38%; width:380px; height:380px; transform: translate(-50%,-50%);
+  background: radial-gradient(circle, rgba(255,190,95,.9), rgba(255,150,50,.3) 40%, transparent 70%);
+  filter: blur(17px); opacity:0; transition: opacity .9s ease, transform .9s var(--ease); pointer-events:none;
+}
+
+/* เค้กโผล่แบบเด้ง + ขยับเบาๆ ตลอดเวลา */
+/* หมายเหตุ: ต่อท้าย cakeDrop เสมอ เพื่อไม่ให้แอนิเมชันตอนโผล่รีสตาร์ทเวลาเพิ่ม/ถอดคลาส */
+.cake-scene{ position:relative; z-index:1; animation: cakeDrop .95s var(--bounce) both }
+.cake-scene.squash{ animation: cakeDrop .95s var(--bounce) both, cakeSquash .5s var(--bounce) }
+.cake-scene.cheer{ animation: cakeDrop .95s var(--bounce) both, cakeCheer .9s var(--bounce) }
+.cake-bob{ animation: cakeBob 3.6s ease-in-out 1.1s infinite }
+@keyframes cakeDrop{
+  0%{ opacity:0; transform: translateY(-46px) scale(.82) }
+  55%{ opacity:1; transform: translateY(8px) scale(1.05) }
+  75%{ transform: translateY(-4px) scale(.98) }
+  100%{ opacity:1; transform:none }
+}
+@keyframes cakeBob{ 0%,100%{ transform: translateY(0) rotate(-.5deg) } 50%{ transform: translateY(-6px) rotate(.5deg) } }
+@keyframes cakeSquash{ 0%{ transform: scale(1,1) } 30%{ transform: scale(1.07,.92) } 60%{ transform: scale(.97,1.04) } 100%{ transform: scale(1,1) } }
+@keyframes cakeCheer{ 0%{ transform: translateY(0) } 35%{ transform: translateY(-22px) scale(1.05) } 60%{ transform: translateY(0) scale(.97,1.03) } 100%{ transform: none } }
+
+/* ป้ายบนเค้ก HBD To Mel — ยกสูงพ้นเปลวเทียน และให้อยู่หลังเทียนเสมอ */
+.topper{ position:relative; width:74%; margin:0 auto 54px; z-index:1;
+  animation: topperIn .8s var(--bounce) .45s both; transform-origin: 50% 120%; }
+.topper-sign{
+  position:relative; z-index:2; padding:.4rem .5rem .45rem; border-radius:12px; font-size:.86rem; line-height:1.25;
+  color: var(--primary-dark); white-space:nowrap;
+  background: linear-gradient(180deg,#fffdf6,#ffeef1);
+  border:2px solid var(--primary); box-shadow: 0 4px 10px rgba(120,30,60,.28), inset 0 1px 0 #fff;
+  animation: signSwing 4s ease-in-out 1.3s infinite;
+}
+.topper-sign b{ color: var(--primary); font-weight:600 }
+.topper-sign::before, .topper-sign::after{
+  content:'✦'; font-size:.62rem; color: var(--accent); position:absolute; top:50%; transform: translateY(-50%);
+}
+.topper-sign::before{ left:.45rem } .topper-sign::after{ right:.45rem }
+.topper-stick{ position:absolute; top:80%; width:3px; height:114px; border-radius:2px; z-index:1;
+  background: linear-gradient(180deg,#e8b88a,#c98b52); }
+@keyframes topperIn{ 0%{ opacity:0; transform: translateY(16px) scale(.6) rotate(-8deg) } 60%{ opacity:1; transform: translateY(-3px) scale(1.06) rotate(2deg) } 100%{ opacity:1; transform:none } }
+@keyframes signSwing{ 0%,100%{ transform: rotate(-2deg) } 50%{ transform: rotate(2deg) } }
+
+.candle-row{ display:flex; justify-content:center; gap:min(34px,10vw); align-items:flex-end; position:relative; z-index:4; }
+.candle{ position:relative; width:15px; height:52px; border-radius:5px 5px 2px 2px; cursor:pointer;
+  background: repeating-linear-gradient(45deg, #fff 0 7px, var(--primary) 7px 14px);
+  box-shadow: 0 3px 8px rgba(0,0,0,.12); transition: filter .3s;
+  animation: candleUp .55s var(--bounce) both; animation-delay: calc(.55s + var(--i,0) * .12s); }
+@keyframes candleUp{ 0%{ opacity:0; transform: translateY(22px) scaleY(.4) } 65%{ opacity:1; transform: translateY(-3px) scaleY(1.08) } 100%{ opacity:1; transform:none } }
+.candle:hover{ filter: brightness(1.12) }
+.candle::after{ content:''; position:absolute; top:-6px; left:50%; transform:translateX(-50%); width:2px; height:7px; background:#5b4636; border-radius:2px }
+.flame{
+  position:absolute; top:-30px; left:50%; width:16px; height:26px; opacity:0;
+  border-radius:50% 50% 45% 45%/ 62% 62% 38% 38%;
+  background: radial-gradient(circle at 50% 72%, #fffbe8 0%, #ffe27a 26%, #ffab2e 58%, #ff5f2e 100%);
+  box-shadow: 0 0 18px 6px rgba(255,168,50,.55); transform-origin: bottom center;
+  transform: translateX(-50%) scale(.2); transition: opacity .45s ease;
+}
+/* จุดไฟทีละเล่มตอนเข้าหน้า */
+.candle.lit .flame{ opacity:1; animation: flicker 1.1s ease-in-out infinite alternate }
+.candle.lit::before{
+  content:''; position:absolute; top:-34px; left:50%; width:34px; height:34px; margin-left:-17px; border-radius:50%;
+  background: radial-gradient(circle, rgba(255,196,90,.55), transparent 70%);
+  animation: sparkOn .7s ease-out both; pointer-events:none;
+}
+@keyframes sparkOn{ 0%{ opacity:0; transform: scale(.2) } 40%{ opacity:1; transform: scale(1.5) } 100%{ opacity:0; transform: scale(1) } }
+@keyframes flicker{
+  0%{ transform: translateX(-50%) scale(1) rotate(-3deg); filter: brightness(1) }
+  100%{ transform: translateX(-52%) scale(1.16,1.1) rotate(3deg); filter: brightness(1.28) }
+}
+.candle.out .flame{ animation: blowOut .5s var(--ease) forwards }
+.candle.out{ filter: saturate(.85) }
+@keyframes blowOut{ to{ opacity:0; transform: translate(-50%,-22px) scale(.2); filter: blur(4px) } }
+.smoke{ position:absolute; top:-34px; left:50%; width:8px; height:8px; border-radius:50%;
+  background: rgba(170,170,170,.55); opacity:0; pointer-events:none; }
+.candle.out .smoke{ animation: smokeUp 1.7s ease-out .25s forwards }
+@keyframes smokeUp{ 0%{opacity:.6; transform:translate(-50%,0) scale(.6)} 100%{opacity:0; transform:translate(-90%,-58px) scale(2.4)} }
+
+/* ชั้นเค้ก: ครีมหยดอยู่ขอบบนของแต่ละชั้น */
+.tier{ position:relative; overflow:hidden; border-radius:16px 16px 9px 9px;
+  box-shadow: inset 0 -12px 20px rgba(170,55,85,.16), inset 0 2px 0 rgba(255,255,255,.4); }
+.frosting{ position:absolute; inset:0 0 auto 0; height:15px; pointer-events:none;
+  background: radial-gradient(circle at 11px 0, var(--frost,#fff6f7) 11.5px, transparent 12px) repeat-x;
+  background-size: 22px 15px; filter: drop-shadow(0 2px 1px rgba(160,60,80,.16)); }
+.stripes{ position:absolute; inset:auto 0 0 0; height:26px; opacity:.85;
+  background: repeating-linear-gradient(90deg,#fb7185 0 13px,#f9a8b4 13px 26px); }
+.sprinkle{ position:absolute; width:8px; height:3px; border-radius:3px; opacity:.95;
+  animation: twinkle 2.8s ease-in-out infinite alternate; animation-delay: var(--td, 0s) }
+@keyframes twinkle{ from{ opacity:.55 } to{ opacity:1 } }
+.plate{ height:16px; border-radius:0 0 50% 50%/ 0 0 100% 100%;
+  background: linear-gradient(180deg,#f6e7ea,#dcc5cb); box-shadow: 0 16px 26px -14px rgba(0,0,0,.45) }
+
+/* ลมเป่า 💨 พัดผ่านหน้าเทียน */
+.puff{ position:absolute; z-index:6; font-size:1.4rem; pointer-events:none; animation: puffBy .7s var(--ease) forwards }
+@keyframes puffBy{ 0%{ opacity:0; transform: translate(-46px,6px) scale(.6) } 30%{ opacity:1 } 100%{ opacity:0; transform: translate(40px,-14px) scale(1.25) } }
+
+#room{ position:fixed; inset:0; z-index:40; pointer-events:none; opacity:0; transition: opacity 1.1s var(--ease);
+  background: radial-gradient(circle at 50% 45%, rgba(10,4,12,.22) 0%, rgba(8,3,12,.82) 36%, rgba(4,2,9,.97) 72%); }
+body.lights-off #room{ opacity:1 }
+body.lights-off #screen-cake > .wrap{ position:relative; z-index:41 }
+body.lights-off .cake-copy{ color:#ffe6c2; text-shadow: 0 0 16px rgba(255,170,60,.55) }
+body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rgba(255,175,60,.5), inset 0 1px 0 #fff }
+
+/* แสงวาบตอนไฟเปิด */
+#flash{ position:fixed; inset:0; z-index:55; pointer-events:none; opacity:0; background:#fff }
+#flash.on{ animation: flashOn .9s ease-out }
+@keyframes flashOn{ 0%{ opacity:0 } 12%{ opacity:.85 } 100%{ opacity:0 } }
+
+/* ==========================================================================
+   6) ซองจดหมาย
+   ========================================================================== */
+.envelope{ width:min(290px,78vw); aspect-ratio: 3/2; position:relative; margin:0 auto; cursor:pointer;
+  transition: transform .35s var(--bounce); filter: drop-shadow(0 22px 30px rgba(120,30,60,.35)) }
+.envelope:hover{ transform: translateY(-8px) rotate(-1deg) scale(1.02) }
+.env-back{ position:absolute; inset:0; border-radius:12px; background: linear-gradient(160deg, var(--primary), var(--primary-dark)) }
+.env-paper{ position:absolute; left:7%; width:86%; height:78%; bottom:10%; border-radius:8px; z-index:2;
+  background: linear-gradient(180deg,#fffdf8,#fff5ea); box-shadow: 0 -6px 14px rgba(0,0,0,.12);
+  transition: transform .8s var(--ease) .22s; display:grid; place-items:center; font-size:1.5rem }
+.env-front{ position:absolute; inset:auto 0 0 0; height:66%; z-index:3; border-radius:0 0 12px 12px;
+  background: linear-gradient(180deg, var(--primary), var(--primary-dark));
+  clip-path: polygon(0 0, 50% 46%, 100% 0, 100% 100%, 0 100%) }
+.env-flap{ position:absolute; inset:0 0 auto 0; height:58%; z-index:4; transform-origin: top center;
+  background: linear-gradient(180deg, #ffffff40, transparent), linear-gradient(180deg, var(--primary), var(--primary-dark));
+  clip-path: polygon(0 0, 100% 0, 50% 100%); transition: transform .75s var(--ease) }
+.seal{ position:absolute; left:50%; top:52%; transform: translate(-50%,-50%); z-index:6; width:44px; height:44px;
+  border-radius:50%; display:grid; place-items:center; font-size:1.1rem; color:#fff;
+  background: radial-gradient(circle at 34% 30%, #ff6b81, var(--primary-dark));
+  box-shadow: 0 6px 14px rgba(0,0,0,.28); transition: opacity .3s, transform .5s var(--bounce) }
+.envelope.open .env-flap{ transform: rotateX(180deg); z-index:1 }
+.envelope.open .seal{ opacity:0; transform: translate(-50%,-50%) scale(.4) }
+.envelope.open .env-paper{ transform: translateY(-80%) }
+
+.letter-paper{
+  background:
+    repeating-linear-gradient(180deg, transparent 0 33px, rgba(200,120,140,.13) 33px 34px),
+    linear-gradient(180deg,#fffdf8,#fff7f1);
+  border:1px solid rgba(200,120,140,.28);
+}
+
+/* ==========================================================================
+   7) ผลลัพธ์ / อื่นๆ
+   ========================================================================== */
+.ring-track{ stroke: var(--primary-soft) }
+.ring-fill{ stroke-linecap:round; transition: stroke-dashoffset 1.5s var(--ease) }
+.quote{ border-left:4px solid var(--primary); background: rgba(255,255,255,.75); border-radius: 0 14px 14px 0 }
+
+#confetti{ position:fixed; inset:0; pointer-events:none; z-index:60 }
+#toast{
+  position:fixed; left:50%; bottom:1.5rem; z-index:70; max-width:min(360px, 86vw); text-align:center;
+  padding:.8rem 1.2rem; font-size:.88rem; border-radius:999px; opacity:0; pointer-events:none;
+  transform: translate(-50%, 22px);
+  background: rgba(30,10,18,.9); color:#fff; box-shadow: var(--shadow-lg);
+  transition: opacity .35s var(--ease), transform .35s var(--bounce);
+}
+#toast.show{ opacity:1; transform: translate(-50%,0) }
+
+::-webkit-scrollbar{ width:9px }
+::-webkit-scrollbar-track{ background: transparent }
+::-webkit-scrollbar-thumb{ background: var(--primary); border-radius:9px; border:2px solid transparent; background-clip: content-box }
+
+@media (min-width:768px){
+  .screen{ padding: 6rem 1.5rem 7rem }
+  .choice{ font-size:1rem }
+}
+</style>
+</head>
+<body class="antialiased">
+
+<!-- เลเยอร์ตกแต่ง -->
+<div class="blob" style="width:320px;height:320px;left:-90px;top:-60px;background:var(--primary-soft)"></div>
+<div class="blob" style="width:280px;height:280px;right:-80px;top:30%;background:var(--bg3);animation-delay:-6s"></div>
+<div class="blob" style="width:360px;height:360px;left:20%;bottom:-140px;background:var(--bg2);animation-delay:-11s"></div>
+<div id="floaters"></div>
+
+<canvas id="confetti"></canvas>
+<div id="room"></div>
+<div id="toast"></div>
+<div id="stamp"><div class="stamp-inner"></div></div>
+
+<!-- กล่องยืนยัน (ใช้ตอนกดอ่านความคิดเห็นของผู้สร้าง) -->
+<div id="modal" class="hidden" role="dialog" aria-modal="true">
+  <div class="modal-backdrop"></div>
+  <div class="modal-card card p-7 text-center">
+    <div class="text-4xl mb-2" id="modal-emoji">👀</div>
+    <h3 class="text-lg font-medium mb-1" id="modal-title">แน่ใจนะ?</h3>
+    <p class="text-sm font-cute mb-6" id="modal-text" style="color:var(--muted)"></p>
+    <div class="flex gap-3">
+      <button id="modal-cancel" class="btn btn-ghost flex-1">ไว้ก่อน</button>
+      <button id="modal-ok" class="btn btn-primary flex-1">ตกลง</button>
+    </div>
+  </div>
+</div>
+
+<!-- แผ่นข้อมูล: ประวัติการตอบ / คอมเมนต์ถึงผู้สร้าง -->
+<div id="sheet" class="hidden" role="dialog" aria-modal="true">
+  <div class="sheet-backdrop"></div>
+  <div class="sheet-card card">
+    <div class="sheet-head">
+      <h3 id="sheet-title" class="text-lg font-medium">หัวข้อ</h3>
+      <button id="sheet-close" class="sheet-x" aria-label="ปิด">✕</button>
+    </div>
+    <div id="sheet-body" class="sheet-body"></div>
+  </div>
+</div>
+
+<!-- ================= แถบขั้นตอน (บนสุด) ================= -->
+<nav id="stepbar" aria-label="ขั้นตอน">
+  <div class="step" data-step="landing" title="เริ่มต้น">🎉</div>
+  <div class="step" data-step="quiz" title="ควิซ">❓</div>
+  <div class="step" data-step="gallery" title="ความทรงจำ">📸</div>
+  <div class="step" data-step="cake" title="เค้ก">🎂</div>
+  <div class="step" data-step="letter" title="จดหมาย">💌</div>
+</nav>
+
+<!-- ================= ปุ่มลอย ================= -->
+<div id="toolbar">
+  <button id="btn-theme" class="tool" title="เปลี่ยนธีมสี" aria-label="เปลี่ยนธีมสี">🎨</button>
+  <button id="btn-music" class="tool" title="เปิด/ปิดเพลง" aria-label="เปิดปิดเพลง">🔇</button>
+  <button id="btn-sfx"   class="tool" title="เปิด/ปิดเสียงเอฟเฟกต์" aria-label="เปิดปิดเสียงเอฟเฟกต์">🔔</button>
+  <button id="btn-wish"  class="tool" title="สุ่มคำอวยพร" aria-label="สุ่มคำอวยพร">🎁</button>
+</div>
+
+<!-- TODO 4: ใส่ path ไฟล์เพลงจริงตรง src -->
+<audio id="bgm" loop preload="none"><source src="music.mp3" type="audio/mpeg" /></audio>
+
+
+<!-- ==========================================================================
+     SCREEN 0 — หน้าล็อก
+     ========================================================================== -->
+<section id="screen-lock" class="screen active">
+  <div class="wrap max-w-sm">
+    <div class="card p-8 text-center stagger">
+      <div class="text-6xl mb-1" style="animation: riseIn .8s var(--bounce) both">🔐</div>
+      <h1 class="text-2xl font-medium mt-3">มีของขวัญรออยู่นะ…</h1>
+      <p class="text-sm mt-2 mb-1" style="color:var(--muted)">ใส่รหัสผ่านเพื่อปลดล็อกความเซอร์ไพรส์ 🎁</p>
+      <p class="text-xs mb-5" style="color:var(--primary)">⚠️ มีโอกาสลองได้แค่ <b>3 ครั้ง</b> เท่านั้นน้า</p>
+      <div>
+        <input id="lock-input" type="text" inputmode="text" autocomplete="off" placeholder="พิมพ์รหัสผ่าน…"
+               class="field text-center text-lg font-cute" />
+        <p id="lock-error" class="text-sm h-6 mt-2" style="color:var(--no)"></p>
+      </div>
+      <button id="btn-unlock" class="btn btn-primary w-full">ปลดล็อก 🔓</button>
+      <!-- Hint ซ่อนไว้ก่อน จะโผล่เมื่อใส่ผิดครบ 2 ครั้ง -->
+      <div id="lock-hint" class="reveal">
+        <div class="reveal-inner text-xs mt-5">💡 <b>Hint:</b> ชื่อขนมที่หวานเหมือนเจ้าของวันเกิดคนนี้แหละ 😉</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ==========================================================================
+     SCREEN 1 — หน้าแรก
+     ========================================================================== -->
+<section id="screen-landing" class="screen">
+  <div class="wrap max-w-md text-center stagger">
+    <div class="text-7xl mb-2">🎂</div>
+    <p class="chip mx-auto">A little gift from Pyopapaya</p>
+    <h1 class="font-script text-5xl md:text-6xl mt-4" style="color:var(--primary)">Happy Birthday</h1>
+    <h2 class="font-script text-4xl md:text-5xl mb-5" style="color:var(--primary)">to Mel! 🎀</h2>
+    <p class="leading-relaxed font-cute text-[1.05rem] mb-6" style="color:var(--muted)">
+      วันนี้เป็นวันพิเศษของเธอน้า ✨<br />
+      แต่ก่อนจะได้อ่านคำอวยพรตัวเต็ม<br />
+      มีด่านสนุกๆ ให้ผ่านไปก่อนนะ พร้อมแล้วก็ลุยเลย!
+    </p>
+
+    <!-- ประกาศรางวัลพิเศษก่อนเริ่มควิซ -->
+    <div class="announce font-cute mb-7">
+      <span class="announce-badge">🎁 ประกาศ!</span>
+      ถ้าทำควิซได้ <b style="color:var(--primary)">80% ขึ้นไป</b> จะมีรางวัลพิเศษให้ด้วยน้า อิอิ 😆
+    </div>
+
+    <button id="btn-start" class="btn btn-primary text-lg px-10">เริ่มเลย 🚀</button>
+    <p class="text-xs mt-6" style="color:var(--muted)">ใช้เวลาประมาณ 3 นาที · เล่นบนมือถือได้สบายๆ</p>
+  </div>
+</section>
+
+
+<!-- ==========================================================================
+     SCREEN 2 — ควิซ (ตอบแล้วเฉลยทันที)
+     ========================================================================== -->
+<section id="screen-quiz" class="screen">
+  <div class="wrap max-w-xl">
+    <div class="card p-5 md:p-8">
+
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <span class="chip" id="quiz-progress-label">ข้อ 1 / 10</span>
+        <span class="chip" id="quiz-score-label" style="background:var(--primary);color:#fff;border-color:transparent">⭐ 0 คะแนน</span>
+      </div>
+
+      <div class="bar mb-6"><i id="quiz-progress-bar"></i></div>
+
+      <h3 id="quiz-question" class="text-xl md:text-2xl font-medium leading-relaxed mb-1">คำถาม…</h3>
+      <p id="quiz-hint" class="text-xs mb-5" style="color:var(--muted)">แตะที่คำตอบได้เลย เฉลยทันที!</p>
+
+      <div id="quiz-choices" class="grid gap-2.5"></div>
+
+      <div id="quiz-text-wrap" class="hidden">
+        <textarea id="quiz-text-input" rows="4" placeholder="พิมพ์คำตอบของเธอที่นี่ได้เลย…" class="field font-cute resize-none"></textarea>
+        <p class="text-xs mt-2 text-right" style="color:var(--muted)"><span id="quiz-text-count">0</span> ตัวอักษร</p>
+      </div>
+
+      <div id="quiz-reveal" class="reveal">
+        <div class="reveal-inner">
+          <p class="text-xs font-medium mb-1" style="color:var(--primary)" id="quiz-reveal-title">✨ เฉลย</p>
+          <p id="quiz-reveal-text" class="font-cute"></p>
+        </div>
+      </div>
+
+      <div class="mt-5 flex gap-3">
+        <button id="btn-multi-check" class="btn btn-primary flex-1 hidden">ดูเฉลยเลย ✨</button>
+        <button id="btn-text-submit"  class="btn btn-primary flex-1 hidden">บันทึกคำตอบ 💌</button>
+        <button id="btn-next" class="btn btn-primary flex-1 hidden">ข้อต่อไป ➡️</button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ==========================================================================
+     SCREEN 3 — สรุปผล
+     ========================================================================== -->
+<section id="screen-result" class="screen">
+  <div class="wrap max-w-md">
+    <div class="card p-7 md:p-9 text-center stagger">
+      <div class="text-5xl" id="result-emoji">🏆</div>
+
+      <div class="relative mx-auto my-2" style="width:180px;height:180px">
+        <svg viewBox="0 0 120 120" class="w-full h-full -rotate-90">
+          <defs>
+            <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--primary)" />
+              <stop offset="100%" stop-color="var(--accent)" />
+            </linearGradient>
+          </defs>
+          <circle class="ring-track" cx="60" cy="60" r="52" fill="none" stroke-width="11" />
+          <circle id="result-ring" class="ring-fill" cx="60" cy="60" r="52" fill="none" stroke-width="11"
+                  stroke="url(#ringGrad)" stroke-dasharray="326.7" stroke-dashoffset="326.7" />
+        </svg>
+        <div class="absolute inset-0 grid place-items-center">
+          <div>
+            <p class="text-4xl font-medium leading-none" id="result-score" style="color:var(--primary)">0/8</p>
+            <p class="text-xs mt-1" style="color:var(--muted)">คะแนนรวม</p>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="text-2xl font-medium">สรุปผลลัพธ์!</h2>
+      <p id="result-message" class="font-cute leading-relaxed mt-1 mb-4" style="color:var(--muted)"></p>
+
+      <!-- รางวัลพิเศษ: โผล่เมื่อทำได้ 80% ขึ้นไป — TODO: แก้ข้อความรางวัลได้ที่นี่ -->
+      <div id="result-prize" class="prize hidden mb-6">
+        <p class="text-xs tracking-widest mb-1" style="color:var(--primary)">★ SPECIAL PRIZE ★</p>
+        <p class="text-2xl mb-1">🎟️🍦</p>
+        <p class="font-cute leading-relaxed">คูปองไอศกรีม 1 ถ้วย (หรือชานมก็ได้)<br />จาก <b>Pyopapaya</b> — ไม่มีวันหมดอายุ</p>
+        <p class="text-xs mt-2" style="color:var(--muted)">แคปหน้าจอนี้ไว้เป็นหลักฐานเลยน้า 😆</p>
+      </div>
+
+      <div id="result-answers" class="text-left space-y-3 mb-6"></div>
+
+      <button id="btn-goto-gallery" class="btn btn-primary w-full">ไปดูความทรงจำกัน 📸</button>
+    </div>
+  </div>
+</section>
+
+
+<!-- ==========================================================================
+     SCREEN 4 — MEMORY GALLERY
+     TODO 2: แทน <div class="photo-empty">📷</div> ด้วย
+             <img src="รูปของคุณ.jpg" alt="" class="w-full h-full object-cover" />
+     TODO 3: แก้ข้อความในแท็ก <p class="cap"> ให้เป็นแคปชั่นจริง
+     ========================================================================== -->
+<section id="screen-gallery" class="screen">
+  <div class="wrap max-w-3xl text-center">
+    <p class="chip mx-auto mb-3">Chapter 02</p>
+    <h2 class="text-2xl md:text-3xl font-medium mb-1">📸 เรื่องราวของเรา</h2>
+    <p class="text-sm mb-8 font-cute" style="color:var(--muted)">ความทรงจำเล็กๆ ที่อยากเก็บไว้ให้นานที่สุด</p>
+
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-9">
+      <figure class="polaroid"><div class="frame"><div class="photo-empty">📷</div></div><p class="cap">[ใส่แคปชั่นรูปที่ 1]</p></figure>
+      <figure class="polaroid"><div class="frame"><div class="photo-empty">📷</div></div><p class="cap">[ใส่แคปชั่นรูปที่ 2]</p></figure>
+      <figure class="polaroid"><div class="frame"><div class="photo-empty">📷</div></div><p class="cap">[ใส่แคปชั่นรูปที่ 3]</p></figure>
+      <figure class="polaroid"><div class="frame"><div class="photo-empty">📷</div></div><p class="cap">[ใส่แคปชั่นรูปที่ 4]</p></figure>
+      <figure class="polaroid"><div class="frame"><div class="photo-empty">📷</div></div><p class="cap">[ใส่แคปชั่นรูปที่ 5]</p></figure>
+      <figure class="polaroid"><div class="frame"><div class="photo-empty">📷</div></div><p class="cap">[ใส่แคปชั่นรูปที่ 6]</p></figure>
+    </div>
+
+    <button id="btn-goto-cake" class="btn btn-primary">ไปต่อกันที่เค้ก 🎂</button>
+  </div>
+</section>
+
+
+<!-- ==========================================================================
+     SCREEN 5 — เค้ก / เป่าเทียน
+     ========================================================================== -->
+<section id="screen-cake" class="screen">
+  <div class="wrap max-w-md text-center">
+    <p class="chip mx-auto mb-3 cake-copy">Chapter 03</p>
+    <h2 id="cake-title" class="text-2xl md:text-3xl font-medium mb-1 cake-copy">หลับตา… ขอพร แล้วเป่าเทียนเลย! 🕯️</h2>
+    <p id="cake-subtitle" class="text-sm mb-7 font-cute cake-copy" style="color:var(--muted)">ปิดไฟก่อนน้า… กำลังจุดเทียนให้อยู่ 🕯️</p>
+
+    <div class="cake-stage mb-7">
+      <div class="glow"></div>
+
+      <div id="cake-scene" class="cake-scene">
+        <div class="cake-bob">
+
+          <!-- ป้ายบนเค้ก — TODO: แก้ข้อความ/อายุตรงนี้ได้เลย -->
+          <div class="topper">
+            <div class="topper-sign font-cute">HBD To Mel</div>
+            <span class="topper-stick" style="left:9%"></span>
+            <span class="topper-stick" style="right:9%"></span>
+          </div>
+
+          <!-- เทียน 3 เล่ม -->
+          <div class="candle-row">
+            <div class="candle" data-candle="1" style="--i:0"><span class="flame"></span><span class="smoke"></span></div>
+            <div class="candle" data-candle="2" style="--i:1"><span class="flame"></span><span class="smoke"></span></div>
+            <div class="candle" data-candle="3" style="--i:2"><span class="flame"></span><span class="smoke"></span></div>
+          </div>
+
+          <!-- ตัวเค้ก 2 ชั้น -->
+          <div class="relative" style="z-index:1">
+            <!-- ชั้นบน -->
+            <div class="tier mx-auto" style="width:70%;height:58px;background:linear-gradient(180deg,#fff1f2,#ffd3da)">
+              <span class="frosting" style="--frost:#fffafa"></span>
+              <span id="sprinkles-top" class="absolute inset-0 pointer-events-none"></span>
+            </div>
+            <!-- ชั้นล่าง -->
+            <div class="tier" style="height:78px;margin-top:-2px;background:linear-gradient(180deg,#ffe0e4,#fda4af)">
+              <span class="frosting" style="height:17px;background-image:radial-gradient(circle at 13px 0, #fff1f3 13.5px, transparent 14px);background-size:26px 17px"></span>
+              <span class="stripes"></span>
+              <span id="sprinkles-bottom" class="absolute inset-0 pointer-events-none"></span>
+            </div>
+            <div class="plate"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <p id="cake-hint" class="text-sm font-cute cake-copy" style="color:var(--muted)">เหลืออีก <b id="candles-left">3</b> เล่ม</p>
+    <button id="btn-blow" class="btn btn-primary mt-4">ฟู่ววว~ เป่าเทียน 💨</button>
+    <div id="flash"></div>
+  </div>
+</section>
+
+
+<!-- ==========================================================================
+     SCREEN 6 — จดหมาย / คำอวยพร
+     ========================================================================== -->
+<section id="screen-letter" class="screen">
+  <div class="wrap max-w-lg">
+
+    <div id="letter-intro" class="text-center">
+      <p class="chip mx-auto mb-6">Chapter 04</p>
+      <div id="envelope" class="envelope mb-7">
+        <div class="env-back"></div>
+        <div class="env-paper">💌</div>
+        <div class="env-front"></div>
+        <div class="env-flap"></div>
+        <div class="seal">M</div>
+      </div>
+      <p class="font-cute" style="color:var(--muted)">แตะที่ซองเพื่อเปิดอ่านคำอวยพร…</p>
+    </div>
+
+    <div id="letter-content" class="hidden">
+      <div class="card letter-paper p-6 md:p-9 text-left">
+        <div class="text-center mb-4">
+          <div class="text-3xl mb-2">🎉 🎂 🎉</div>
+          <h2 class="font-script text-4xl md:text-5xl" style="color:var(--primary)">Happy Birthday</h2>
+          <p class="font-script text-3xl md:text-4xl mt-1" style="color:var(--primary)">to Mel!</p>
+        </div>
+
+        <p id="letter-main-text" class="font-cute text-[1.05rem] leading-loose whitespace-pre-line mb-6"></p>
+
+        <p class="text-right font-script text-2xl mb-6" style="color:var(--primary)">— Pyopapaya</p>
+
+        <div class="space-y-3">
+          <button id="btn-show-short" class="btn btn-primary w-full">คลิกเพื่ออ่านความคิดเห็นของผู้สร้าง 👀</button>
+          <div id="short-reveal" class="reveal">
+            <div class="reveal-inner text-center font-cute" id="letter-short-text"></div>
+          </div>
+
+          <button id="btn-more-wish" class="btn btn-ghost w-full">สุ่มคำอวยพรเพิ่มอีกข้อ 🎁</button>
+          <div id="random-reveal" class="reveal">
+            <div class="reveal-inner text-center font-cute" id="letter-random-text"></div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <button id="btn-history" class="btn btn-ghost text-sm px-3">ประวัติการตอบ 📋</button>
+            <button id="btn-comment" class="btn btn-ghost text-sm px-3">คอมเมนต์ผู้สร้าง 💬</button>
+          </div>
+
+          <button id="btn-replay" class="btn btn-ghost w-full">เล่นใหม่อีกรอบ 🔄</button>
+        </div>
+      </div>
+      <p class="text-center text-xs mt-5" style="color:var(--muted)">Made with 😎 by Pyopapaya</p>
+    </div>
+
+  </div>
+</section>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ========================================================================
+     CONFIG — TODO 1: เปลี่ยนรหัสผ่านตรงนี้ (ไม่สนใจตัวพิมพ์เล็ก/ใหญ่)
+     ======================================================================== */
+  const CONFIG = {
+    friendName: "Mel",
+    enableLock: true,
+    password: "caramel",        // ไม่สนตัวพิมพ์เล็ก/ใหญ่ และช่องว่าง
+  };
+
+  /* ------------------------------------------------------------------------
+     TODO 7 — คอมเมนต์ข้ามเครื่อง (ให้คนอื่นคอมเมนต์แล้วเราเห็นด้วย)
+     ------------------------------------------------------------------------
+     ค่าเริ่มต้น: คอมเมนต์เก็บอยู่ในเครื่องคนคอมเมนต์เท่านั้น (เราไม่เห็น)
+     ถ้าอยากให้คอมเมนต์ของทุกคนมารวมที่เดียว ให้ทำ 4 ขั้นตอนนี้ (ฟรี ใช้เวลา ~5 นาที):
+
+     1) เปิด Google Sheet ใหม่ → เมนู Extensions → Apps Script
+     2) ลบโค้ดเดิม แล้ววางโค้ดนี้:
+
+          const SH = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+          function doPost(e) {
+            const d = JSON.parse(e.postData.contents);
+            SH.appendRow([new Date(), (d.name || "").slice(0,60), (d.text || "").slice(0,500)]);
+            return ContentService.createTextOutput(JSON.stringify({ ok: true }))
+                   .setMimeType(ContentService.MimeType.JSON);
+          }
+          function doGet() {
+            const rows = SH.getDataRange().getValues().map(r => ({ at: r[0], name: r[1], text: r[2] }));
+            return ContentService.createTextOutput(JSON.stringify(rows))
+                   .setMimeType(ContentService.MimeType.JSON);
+          }
+
+     3) กด Deploy → New deployment → เลือก Web app
+        · Execute as: Me    · Who has access: Anyone
+        แล้วก๊อป URL ที่ได้ (ลงท้ายด้วย /exec)
+     4) เอา URL มาวางที่ url ข้างล่าง แล้วเปลี่ยน enabled เป็น true
+
+     คอมเมนต์ทุกอันจะไหลเข้า Google Sheet ของเราแบบเรียลไทม์ (เปิดดูได้ตลอด)
+     และถ้าเน็ตหลุด/ส่งไม่สำเร็จ ระบบจะเก็บไว้ในเครื่องแล้วส่งซ้ำให้อัตโนมัติรอบหน้า
+     ------------------------------------------------------------------------ */
+  const REMOTE = {
+    enabled: false,           // ← เปลี่ยนเป็น true เมื่อวาง url แล้ว
+    url: "",                  // ← วาง Web app URL (.../exec) ตรงนี้
+    showOthers: true,         // ให้ทุกคนเห็นคอมเมนต์ของคนอื่นด้วยไหม (false = เห็นเฉพาะของตัวเอง)
+  };
+
+  /* TODO 5: คำอวยพรสุ่ม (ปุ่ม 🎁 และปุ่มในจดหมาย) */
+  const WISH_POOL = [
+    "เป็นพี่แล้วเลี้ยงไอศกรีมน้องด้วยน้าาา 🍦 Good luck!",
+    "ขอให้หน้าเด็กลงทุกปี (ยกเว้นใจ เพราะเป็นยายอยู่แล้ว) 😂",
+    "ขอให้รวยจนไม่ต้องเห็น bank statement ติดลบอีกต่อไป 💸",
+    "ขอให้เจอแต่คนดีๆ เหมือนเรานี่แหละ (พูดเอง ชมเอง) 😎",
+    "ปีนี้ขอให้ปังกว่าเดิม เผาได้มากกว่าเดิม แต่ระวังไฟไหม้กระท่อมด้วยน้า 🔥",
+    "ขอให้หมีขั้วโลกอร่อยตลอดไป (ล้อเล่นน้า) 🐻‍❄️🍦",
+    "ขอให้ทุกวันจันทร์รู้สึกเหมือนวันศุกร์ตอนเลิกงาน 🎊",
+  ];
+
+  /* TODO 6: คำอวยพรหลัก + คำกวนๆ ท้ายจดหมาย */
+  const MAIN_WISH =
+`Happy Birthday To Mel! ขอให้เมลประสบความสำเร็จในด้านการใช้ชีวิต ด้านการงาน ด้านการเงิน ขอให้เป็นอายุที่มีแต่เรื่องดีๆ พบเจอคนที่ดี ขอให้มีรอยยิ้มที่สดใสแบบนี้ต่อไป ขอให้อายุยืนๆ นานไป 100 ปี ร่างกายแข็งแรง ไม่เจ็บไม่ป่วย ขอให้ได้กินของที่อร่อยๆ และได้เที่ยวในที่ที่อยากไป
+
+ขอบคุณที่เป็นรอยยิ้มและเรื่องราวดีๆ ให้คนรอบข้างเสมอมา ตั้งใจเติบโตอย่างงดงาม และเป็นตัวเองเวอร์ชันที่ดีที่สุดต่อไปจ้า!`;
+
+  const SHORT_WISH = "เป็นพี่แล้วพาไปเลี้ยงไอศกรีมด้วยน๊ะจ๊ะ 🍦";
+
+  /* ========================================================================
+     ชุดคำถาม — ข้อ 9/10 เป็นคำถามปลายเปิด (เก็บไว้โชว์ในหน้าสรุป)
+     ======================================================================== */
+  const QUIZ = [
+    {
+      type: "single",
+      question: "เจ้าของวันเกิดชื่ออะไร?",
+      explanation: "ชื่อเมลน๊ะจ๊ะ อิอิ 😜 (ข้อนี้แกล้งเล่นน้า ตัวเลือก A มันวิ่งหนีตลอด — แต่แอบให้คะแนนไปแล้ว 💗)",
+      runaway: "A",
+      freebie: true,
+      choices: [
+        { key: "A", label: "Mel", emoji: "👧", correct: true },
+        { key: "B", label: "Nong Meaow", emoji: "🐱" },
+        { key: "C", label: "Grandmom", emoji: "👵" },
+        { key: "D", label: "Camel", emoji: "🐫" },
+        { key: "E", label: "Caramel", emoji: "🍮" },
+        { key: "F", label: "Melody", emoji: "🎵" },
+      ],
+    },
+    {
+      type: "single",
+      question: "เจ้าของวันเกิดอายุเท่าไหร่?",
+      explanation: "ถึงร่างกายฉันจะเป็นสาว แต่จิตใจชั้นเป็นวัยชรา 👵✨",
+      choices: [
+        { key: "A", label: "เป็นเบบี๋ 2 ขวบ", emoji: "🍼" },
+        { key: "B", label: "18 Forever", emoji: "💅" },
+        { key: "C", label: "60 ยังแจ๋ว", emoji: "🦖" },
+        { key: "D", label: "25 วัยชรา", emoji: "🕰️", correct: true },
+      ],
+    },
+    {
+      type: "single",
+      question: "สิ่งที่เจ้าของวันเกิดชอบทำมากที่สุด?",
+      explanation: "Approved by เพื่อนร่วมงานสุดเท่ 💼 (อินเตอร์สอนให้เรารักงานจริงๆ นะ)",
+      choices: [
+        { key: "A", label: "ไอติมคือทุกอย่างของชีวิต", emoji: "🍦" },
+        { key: "B", label: "ฉันรักอินเตอร์ เพราะอินเตอร์สอนให้ฉันรักงาน", emoji: "💼", correct: true },
+        { key: "C", label: "ไปเที่ยว ขับรถ ปีนเขา เผากระท่อม กระโดดบันจี้จั๊ม ฉันทำหมด", emoji: "🏔️" },
+        { key: "D", label: "ฉันชอบนอนนนนนน", emoji: "😴" },
+      ],
+    },
+    {
+      type: "single",
+      question: "เจ้าของวันเกิดชอบกินอะไรมากที่สุด?",
+      explanation: "นี่ฉันชอบกินหมีขั้วโลกหรือนี่ 🐻‍❄️",
+      choices: [
+        { key: "A", label: "Ice cream", emoji: "🍦" },
+        { key: "B", label: "Carrot", emoji: "🥕" },
+        { key: "C", label: "Chocolate", emoji: "🍫" },
+        { key: "D", label: "Cat", emoji: "🐱" },
+        { key: "E", label: "หญ้า", emoji: "🌿" },
+        { key: "F", label: "Ice Bear", emoji: "🐻‍❄️", correct: true },
+      ],
+    },
+    {
+      type: "single",
+      question: "เจ้าของวันเกิดชอบดูหนังอะไร?",
+      explanation: "โสดแบบเราๆ ดูหนังคนเดียวแล้วมันเหงา 🥲",
+      choices: [
+        { key: "A", label: "หนังไก่", emoji: "🐔" },
+        { key: "B", label: "หนังผี", emoji: "👻" },
+        { key: "C", label: "หนังอะไรก็ได้ขอแค่ดูกับเธอ", emoji: "💕", correct: true },
+        { key: "D", label: "หนังหมา", emoji: "🐶" },
+        { key: "E", label: "หนังตลกมันทางของพี่", emoji: "🤣" },
+        { key: "F", label: "หนังโรแมนติก ฟินๆๆๆ", emoji: "🌹" },
+      ],
+    },
+    {
+      type: "single",
+      question: "เจ้าของวันเกิดชอบสัตว์อะไรมากที่สุด?",
+      explanation: "เพราะฉันชอบกินหมู 🐷 (สัตว์ที่รักคือสัตว์ที่อร่อย)",
+      choices: [
+        { key: "A", label: "แมวน้อยหอยสังข์", emoji: "🐚" },
+        { key: "B", label: "หมาปั๊ก ไม่ใช่ทุกปั๊กจะมีไฟ ไม่ใช่ทุกใจจะมีรัก", emoji: "🐶" },
+        { key: "C", label: "หมูคุโรบูตะ", emoji: "🐷", correct: true },
+        { key: "D", label: "ชิวาว่าลูกแม๊", emoji: "🐕" },
+      ],
+    },
+    {
+      type: "single",
+      allRight: true,                       // ข้อนี้ตอบข้อไหนก็ถูกหมด
+      question: "เจ้าของวันเกิดชอบดอกไม้อะไร?",
+      hint: "ข้อนี้แตะข้อไหนก็ถูกหมดน้า 🌸",
+      explanation: "ถูกทุกข้อเลยยย! คนทำก็ไม่รู้เหมือนกัน อิอิ 🌸",
+      choices: [
+        { key: "A", label: "ดอกบัวไหว้พระ", emoji: "🪷", correct: true },
+        { key: "B", label: "ดอกไม้ทิชชู่ ฮั๊ดชิ่ว", emoji: "🤧", correct: true },
+        { key: "C", label: "ดอกรักไหว้แม่", emoji: "💐", correct: true },
+        { key: "D", label: "ไม่ชอบดอกไม้", emoji: "🚫", correct: true },
+        { key: "E", label: "หญ้า", emoji: "🌿", correct: true },
+        { key: "F", label: "ดอกอะไรก็ได้", emoji: "🌼", correct: true },
+      ],
+    },
+    {
+      type: "multi",
+      question: "เจ้าของวันเกิดนิสัยเป็นแบบไหน?",
+      hint: "เลือกได้หลายข้อ (แต่มีข้อเดียวที่ตรงปก 😏)",
+      explanation: "Approved by เพื่อนสนิทที่รู้ทัน 😏 กวนส้นเท้าที่สุดในสามโลก",
+      choices: [
+        { key: "A", label: "นิสัยดีย์ น่ารัก", emoji: "😇" },
+        { key: "B", label: "เริ่ด", emoji: "💅" },
+        { key: "C", label: "เฟี้ยวฟ้าว อยากกินมะพร้าว", emoji: "🥥" },
+        { key: "D", label: "เป็นไมโครซอฟต์เวิร์ด", emoji: "📄" },
+        { key: "E", label: "คตเท่ห์ คตอันตราย", emoji: "🕶️" },
+        { key: "F", label: "กวนส้นเท้า", emoji: "🦶", correct: true },
+      ],
+    },
+    {
+      type: "text",
+      question: "ถ้าวันนึงอายุครบ 60 แล้วย้อนเวลากลับมาตอนนี้ สิ่งแรกที่จะทำคืออะไร?",
+      hint: "ข้อนี้ไม่มีถูกผิด พิมพ์อะไรก็ได้เลย ✍️",
+      note: "เก็บคำตอบนี้ไว้ให้แล้วน้า เดี๋ยวไปอ่านพร้อมกันตอนสรุป 💌",
+    },
+    {
+      type: "text",
+      question: "คำอวยพรที่อยากให้เป็นจริงในปีนี้คืออะไร?",
+      hint: "ขอให้เป็นจริงทุกข้อเลยน้า ✨",
+      note: "ขอให้เป็นจริงทุกอย่างที่ขอเลยน้า 🙏✨",
+    },
+  ];
+
+  /* ========================================================================
+     STATE + HELPERS
+     ======================================================================== */
+  const state = {
+    qIndex: 0, score: 0, scorable: 0,
+    selected: [], answered: false, textAnswers: {}, log: [],
+    dodges: 0, runawayWatch: null, prizeWon: false,
+    themes: ["rose", "sakura", "honey", "mint"], themeIndex: 0,
+  };
+  const THEME_NAME = { rose: "แดงโรส 🌹", sakura: "ชมพูซากุระ 🌸", honey: "ทองน้ำผึ้ง 🍯", mint: "มิ้นต์เย็นๆ 🌿" };
+
+  const $ = (id) => document.getElementById(id);
+  const el = (t, c) => { const e = document.createElement(t); if (c) e.className = c; return e; };
+  const esc = (s) => String(s).replace(/[&<>"]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+
+  /* ------------------------------------------------------------------
+     ที่เก็บข้อมูลถาวร (ประวัติการตอบ + คอมเมนต์)
+     เก็บใน localStorage ของเครื่อง — รีเฟรช/กดเล่นใหม่ก็ไม่หาย
+     ถ้าเบราว์เซอร์ไม่ให้ใช้ จะ fallback เก็บในหน่วยความจำชั่วคราวแทน
+     ------------------------------------------------------------------ */
+  const KEY = { history: "hbd-mel-history", comments: "hbd-mel-comments", outbox: "hbd-mel-outbox" };
+  const memStore = {};
+  let storageOK = true;
+  function loadJSON(k, fallback) {
+    try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; }
+    catch (e) { storageOK = false; return memStore[k] !== undefined ? memStore[k] : fallback; }
+  }
+  function saveJSON(k, v) {
+    memStore[k] = v;
+    try { localStorage.setItem(k, JSON.stringify(v)); return true; }
+    catch (e) { storageOK = false; return false; }
+  }
+  /* ---- ส่ง/ดึงคอมเมนต์จากที่เก็บกลาง (ดูวิธีตั้งค่าที่ TODO 7 ด้านบน) ---- */
+  const remoteOn = () => REMOTE.enabled && /^https?:\/\//.test(REMOTE.url);
+
+  async function remotePost(c) {
+    if (!remoteOn()) return false;
+    try {
+      // ไม่ใส่ header เพื่อให้เป็น simple request (เลี่ยง CORS preflight ของ Apps Script)
+      await fetch(REMOTE.url, { method: "POST", body: JSON.stringify(c) });
+      return true;
+    } catch (e) {
+      try { await fetch(REMOTE.url, { method: "POST", mode: "no-cors", body: JSON.stringify(c) }); return true; }
+      catch (e2) { return false; }
+    }
+  }
+
+  async function remoteList() {
+    if (!remoteOn() || !REMOTE.showOthers) return null;
+    try {
+      const res = await fetch(REMOTE.url, { method: "GET" });
+      const data = await res.json();
+      return Array.isArray(data)
+        ? data.filter((r) => r && r.text).map((r) => ({ at: r.at, text: r.text, name: r.name || "", remote: true }))
+        : null;
+    } catch (e) { return null; }
+  }
+
+  // ส่งซ้ำอันที่ค้างอยู่ (เช่นตอนเน็ตหลุด)
+  async function flushOutbox() {
+    if (!remoteOn()) return;
+    const box = loadJSON(KEY.outbox, []);
+    if (!box.length) return;
+    const left = [];
+    for (const c of box) { if (!(await remotePost(c))) left.push(c); }
+    saveJSON(KEY.outbox, left);
+  }
+  setTimeout(flushOutbox, 2500);
+
+  const thaiDate = (iso) => {
+    try {
+      return new Date(iso).toLocaleString("th-TH", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    } catch (e) { return iso; }
+  };
+
+  function showScreen(id, stepName) {
+    const cur = document.querySelector(".screen.active");
+    const next = $(id);
+    if (!next || cur === next) return;
+    const go = () => {
+      // ปิดทุกหน้าที่ยัง active อยู่ (กันกรณีสั่งเปลี่ยนหน้าซ้อนกัน แล้วเหลือ 2 หน้าค้าง)
+      document.querySelectorAll(".screen.active").forEach((s) => s.classList.remove("active", "leaving"));
+      next.classList.add("active");
+      window.scrollTo({ top: 0, behavior: "auto" });
+      if (stepName) setStep(stepName);
+    };
+    if (cur) { cur.classList.add("leaving"); setTimeout(go, 250); } else { go(); }
+  }
+
+  function setStep(name) {
+    const order = ["landing", "quiz", "gallery", "cake", "letter"];
+    const at = order.indexOf(name);
+    document.querySelectorAll(".step").forEach((s) => {
+      const i = order.indexOf(s.dataset.step);
+      s.classList.toggle("now", i === at);
+      s.classList.toggle("done", i < at);
+    });
+  }
+
+  function toast(msg) {
+    const t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => t.classList.remove("show"), 2800);
+  }
+
+  /* ---------------- ของตกแต่งลอยพื้นหลัง ---------------- */
+  (function buildFloaters() {
+    const icons = ["🎈", "💗", "✨", "🎀", "🍦", "🎂"];
+    const box = $("floaters");
+    for (let i = 0; i < 6; i++) {          // น้อยๆ พอ ไม่ให้เครื่องกระตุก
+      const s = el("span", "floater");
+      s.textContent = icons[i % icons.length];
+      s.style.left = Math.random() * 96 + "vw";
+      s.style.bottom = "-10vh";
+      s.style.fontSize = 14 + Math.random() * 20 + "px";
+      s.style.animationDuration = 16 + Math.random() * 16 + "s";
+      s.style.animationDelay = -Math.random() * 26 + "s";
+      box.appendChild(s);
+    }
+  })();
+
+  /* ---------------- เม็ดโรยหน้าเค้ก ---------------- */
+  (function buildSprinkles() {
+    const cols = ["#f43f5e", "#fbbf24", "#34d399", "#60a5fa", "#c084fc", "#fb923c"];
+    [["sprinkles-top", 12], ["sprinkles-bottom", 16]].forEach(([id, n]) => {
+      const box = $(id);
+      if (!box) return;
+      for (let i = 0; i < n; i++) {
+        const s = el("i", "sprinkle");
+        s.style.background = cols[i % cols.length];
+        s.style.left = 8 + Math.random() * 80 + "%";
+        s.style.top = 12 + Math.random() * 62 + "%";
+        s.style.transform = `rotate(${Math.random() * 180}deg)`;
+        s.style.setProperty("--td", (-Math.random() * 2.6).toFixed(2) + "s");   // กะพริบไม่พร้อมกัน
+        box.appendChild(s);
+      }
+    });
+  })();
+
+  /* ========================================================================
+     CONFETTI ENGINE (เขียนเอง ไม่พึ่งไลบรารีภายนอก)
+     ======================================================================== */
+  // ปรับจำนวน/น้ำหนักเอฟเฟกต์ได้ที่นี่ — ตั้งไว้เบาๆ เพื่อไม่ให้เครื่องกระตุก
+  const FX = { rain: 22, burst: 10, max: 70 };
+
+  const canvas = $("confetti");
+  const ctx = canvas.getContext("2d");
+  let dpr = Math.min(window.devicePixelRatio || 1, 1.5);   // ไม่ต้องคมมาก ประหยัดแรงวาด
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
+    canvas.style.width = innerWidth + "px"; canvas.style.height = innerHeight + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  addEventListener("resize", resize); resize();
+
+  const COLORS = ["#e11d48", "#fbbf24", "#f472b6", "#22c55e", "#38bdf8", "#c084fc"];
+  let pieces = [], raf = null;
+
+  function tick() {
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    for (let i = 0; i < pieces.length; i++) {
+      const p = pieces[i];
+      p.vy += p.g; p.x += p.vx; p.y += p.vy; p.rot += p.vrot; p.life -= 1;
+      ctx.save();
+      ctx.globalAlpha = p.life < 40 ? p.life / 40 : 1;
+      ctx.translate(p.x, p.y);
+      ctx.rotate((p.rot * Math.PI) / 180);
+      ctx.fillStyle = p.color;
+      if (p.round) { ctx.beginPath(); ctx.arc(0, 0, p.w / 2, 0, 6.3); ctx.fill(); }
+      else ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    }
+    pieces = pieces.filter((p) => p.life > 0 && p.y < innerHeight + 50);
+    raf = pieces.length ? requestAnimationFrame(tick) : null;
+  }
+
+  function spawn(n, opts) {
+    const o = opts || {};
+    const room = FX.max - pieces.length;                    // จำกัดจำนวนชิ้นบนจอ
+    n = Math.max(0, Math.min(n, room));
+    for (let i = 0; i < n; i++) {
+      const burst = o.x !== undefined;
+      const ang = Math.random() * Math.PI * 2;
+      const sp = 3 + Math.random() * 6;
+      pieces.push({
+        x: burst ? o.x : Math.random() * innerWidth,
+        y: burst ? o.y : -20 - Math.random() * innerHeight * 0.3,
+        w: 5 + Math.random() * 5, h: 7 + Math.random() * 7,
+        color: COLORS[(Math.random() * COLORS.length) | 0],
+        round: Math.random() < 0.3,
+        vx: burst ? Math.cos(ang) * sp : -1.2 + Math.random() * 2.4,
+        vy: burst ? Math.sin(ang) * sp - 2 : 1.8 + Math.random() * 2.4,
+        g: 0.14, rot: Math.random() * 360, vrot: -8 + Math.random() * 16,
+        life: burst ? 65 + Math.random() * 35 : 200,
+      });
+    }
+    if (n > 0 && !raf) raf = requestAnimationFrame(tick);
+  }
+  const rain = (n) => spawn(n || FX.rain);
+  function burstFrom(node, n) {
+    const r = node.getBoundingClientRect();
+    spawn(n || FX.burst, { x: r.left + r.width / 2, y: r.top + r.height / 2 });
+  }
+
+  /* ========================================================================
+     SCREEN 0 — ล็อก
+     ======================================================================== */
+  function unlock() {
+    $("toolbar").classList.add("show");
+    $("stepbar").classList.add("show");
+    showScreen("screen-landing", "landing");
+  }
+  // ตัดช่องว่าง + ไม่สนตัวพิมพ์เล็ก/ใหญ่ (CARAMEL = Caramel = caramel)
+  const normalize = (s) => String(s).trim().toLowerCase().replace(/\s+/g, "");
+
+  let lockTries = 0;
+  const LOCK_MSG = [
+    "รหัสไม่ถูกน้า เหลืออีก 2 ครั้ง 🥺",
+    "ผิดอีกแล้ว… เหลืออีก 1 ครั้งสุดท้าย 😬 (ใบ้ให้แล้วข้างล่าง)",
+    "หมดสิทธิ์แล้วจ้า… ล้อเล่นน้า 😝 ลองต่อได้เรื่อยๆ เลย",
+    "ยังไม่ถูกน้า ใจเย็นๆ ค่อยๆ คิด 🍮",
+    "เกือบแล้ว! (ไม่หรอก) ลองใหม่อีกที 😆",
+  ];
+
+  function tryUnlock() {
+    const v = normalize($("lock-input").value);
+    if (v === normalize(CONFIG.password)) {
+      $("lock-error").textContent = "";
+      rain(16);
+      sfx("ok");
+      unlock();
+      return;
+    }
+    lockTries += 1;
+    $("lock-error").textContent = LOCK_MSG[Math.min(lockTries - 1, LOCK_MSG.length - 1)];
+    $("lock-input").classList.add("shake");
+    setTimeout(() => $("lock-input").classList.remove("shake"), 500);
+    sfx("no");
+    if (lockTries >= 2) $("lock-hint").classList.add("show");   // ผิดครบ 2 ครั้ง → เปิด Hint
+  }
+  $("btn-unlock").addEventListener("click", tryUnlock);
+  $("lock-input").addEventListener("keydown", (e) => { if (e.key === "Enter") tryUnlock(); });
+  if (!CONFIG.enableLock) { $("screen-lock").classList.remove("active"); unlock(); }
+
+  /* ========================================================================
+     SCREEN 1 — หน้าแรก
+     ======================================================================== */
+  $("btn-start").addEventListener("click", () => {
+    showScreen("screen-quiz", "quiz");
+    renderQuestion();
+  });
+
+  /* ========================================================================
+     SCREEN 2 — ควิซ (ตอบปุ๊บ เฉลยปั๊บ)
+     ======================================================================== */
+  const choicesBox = $("quiz-choices");
+  const revealBox = $("quiz-reveal");
+
+  function stopRunawayWatch() {
+    if (!state.runawayWatch) return;
+    document.removeEventListener("mousemove", state.runawayWatch);
+    state.runawayWatch = null;
+  }
+
+  function renderQuestion() {
+    const q = QUIZ[state.qIndex];
+    if (!q) { goToResult(); return; }        // กันพลาด ถ้าเลยข้อสุดท้ายไปแล้ว
+    state.selected = []; state.answered = false; state.dodges = 0;
+    stopRunawayWatch();
+
+    $("quiz-progress-label").textContent = `ข้อ ${state.qIndex + 1} / ${QUIZ.length}`;
+    $("quiz-progress-bar").style.width = `${((state.qIndex + 1) / QUIZ.length) * 100}%`;
+    $("quiz-score-label").textContent = `⭐ ${state.score} คะแนน`;
+    $("quiz-question").textContent = q.question;
+    $("quiz-hint").textContent = q.hint || "แตะที่คำตอบได้เลย เฉลยทันที!";
+
+    revealBox.classList.remove("show");
+    $("btn-next").classList.add("hidden");
+    $("btn-multi-check").classList.add("hidden");
+    $("btn-text-submit").classList.add("hidden");
+    $("btn-multi-check").disabled = true;
+
+    choicesBox.innerHTML = "";
+
+    if (q.type === "text") {
+      choicesBox.classList.add("hidden");
+      $("quiz-text-wrap").classList.remove("hidden");
+      $("quiz-text-input").value = "";
+      $("quiz-text-count").textContent = "0";
+      $("btn-text-submit").classList.remove("hidden");
+      return;
+    }
+
+    $("quiz-text-wrap").classList.add("hidden");
+    choicesBox.classList.remove("hidden");
+    choicesBox.className = "grid gap-2.5" + (q.choices.length > 4 ? " sm:grid-cols-2" : "");
+
+    q.choices.forEach((c, i) => {
+      const b = el("button", "choice");
+      b.type = "button";
+      b.dataset.key = c.key;
+      // แอนิเมชันตอนโผล่: ใช้คลาส .enter แล้วถอดทิ้งเมื่อจบ
+      // (ถ้าปล่อยค้างไว้ animation จะทับ transform ที่ JS สั่ง เช่นปุ่มวิ่งหนี)
+      b.classList.add("enter");
+      b.style.setProperty("--d", i * 0.045 + "s");
+      b.addEventListener("animationend", () => b.classList.remove("enter"), { once: true });
+      setTimeout(() => b.classList.remove("enter"), 900);   // กันเหนียว ถ้า animationend ไม่ยิง
+      b.innerHTML =
+        `<span class="key">${c.key}</span>` +
+        (c.emoji ? `<span class="emo">${c.emoji}</span>` : "") +
+        `<span class="label">${c.label}</span><span class="mark"></span>`;
+
+      if (q.runaway && c.key === q.runaway) {
+        // ตัวเลือกวิ่งหนี: หน้าตาเหมือนช้อยส์อื่น แต่เมาส์แตะกรอบเมื่อไหร่ก็ขยับหนีทันที
+        // (ห้ามใส่คลาส .enter เพราะ animation จะทับ transform ที่สั่งด้วย JS)
+        b.classList.add("runaway");
+        b.classList.remove("enter");
+        let dx = 0, dy = 0, last = 0;
+
+        const dodge = (ev) => {
+          if (state.answered) return;
+          if (ev && ev.cancelable) ev.preventDefault();
+          const now = Date.now();
+          if (now - last < 90) return;       // กันเด้งรัวจาก event หลายตัวในจังหวะเดียว
+          last = now;
+
+          const r = b.getBoundingClientRect();
+          const homeL = r.left - dx, homeT = r.top - dy;    // ตำแหน่งเดิมก่อนขยับ
+          const vw = innerWidth || document.documentElement.clientWidth || 360;
+          const vh = innerHeight || document.documentElement.clientHeight || 640;
+          const clamp = (v, a, z) => (z < a ? (a + z) / 2 : Math.max(a, Math.min(v, z)));
+
+          // วิ่งได้ทั้งจอ ขอแค่ยังอยู่ในหน้าจอ (ไม่จำกัดอยู่แค่ในการ์ด)
+          const minX = 6 - homeL, maxX = vw - 6 - r.width - homeL;
+          const minY = 6 - homeT, maxY = vh - 6 - r.height - homeT;
+          let nx, ny, tries = 0;
+          do {
+            nx = clamp(dx + (Math.random() - 0.5) * 2 * Math.max(140, vw * 0.55), minX, maxX);
+            ny = clamp(dy + (Math.random() - 0.5) * 2 * Math.max(120, vh * 0.35), minY, maxY);
+            tries++;
+          } while (Math.hypot(nx - dx, ny - dy) < 90 && tries < 14);
+          dx = nx; dy = ny;
+
+          b.style.setProperty("transform", `translate(${dx}px, ${dy}px) rotate(${(Math.random() - 0.5) * 18}deg)`, "important");
+          b.classList.remove("giggle"); void b.offsetWidth; b.classList.add("giggle");
+          state.dodges++;
+          if (state.dodges === 3) toast("จับไม่ได้หรอกน้า 😆");
+          if (state.dodges === 8) toast("ยอมแพ้เถอะ… รู้อยู่แล้วว่าชื่อเมล 💗");
+        };
+
+        // เมาส์เข้าใกล้/แตะกรอบเมื่อไหร่ = หนีทันที (mouseenter อย่างเดียวไม่พอตอนปุ่มขยับตามเมาส์)
+        state.runawayWatch = (e) => {
+          if (state.answered) return;
+          const r = b.getBoundingClientRect();
+          const pad = 14;
+          if (e.clientX >= r.left - pad && e.clientX <= r.right + pad &&
+              e.clientY >= r.top - pad && e.clientY <= r.bottom + pad) dodge();
+        };
+        document.addEventListener("mousemove", state.runawayWatch, { passive: true });
+
+        b.addEventListener("mouseenter", dodge);
+        b.addEventListener("pointerdown", dodge);
+        b.addEventListener("touchstart", dodge, { passive: false });
+        b.addEventListener("click", (e) => { e.preventDefault(); dodge(); });
+      } else {
+        b.addEventListener("click", () => onChoice(q, b, c));
+      }
+      choicesBox.appendChild(b);
+    });
+
+    if (q.type === "multi") {
+      const btn = $("btn-multi-check");
+      btn.classList.remove("hidden");
+      btn.disabled = true;
+    }
+  }
+
+  function onChoice(q, btn, choice) {
+    if (state.answered) return;
+
+    if (q.type === "single") {
+      state.selected = [choice.key];
+      choicesBox.querySelectorAll(".choice").forEach((b) => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      revealAnswer(q);                       // ⬅️ ตอบแล้วเฉลยทันที
+      return;
+    }
+
+    btn.classList.toggle("selected");
+    const i = state.selected.indexOf(choice.key);
+    if (i >= 0) state.selected.splice(i, 1); else state.selected.push(choice.key);
+    $("btn-multi-check").disabled = state.selected.length === 0;
+  }
+
+  $("btn-multi-check").addEventListener("click", () => {
+    const q = QUIZ[state.qIndex];
+    if (state.answered || state.selected.length === 0) return;
+    revealAnswer(q);
+  });
+
+  function revealAnswer(q) {
+    state.answered = true;
+    state.scorable += 1;
+
+    const correctKeys = q.choices.filter((c) => c.correct).map((c) => c.key);
+    let gotPoint =
+      q.allRight ? true                                   // ข้อ 7 ตอบข้อไหนก็ถูก
+      : q.type === "single" ? state.selected[0] === correctKeys[0]
+      : correctKeys.some((k) => state.selected.includes(k));
+    if (q.freebie) gotPoint = true;          // ข้อ 1 แกล้งเล่น — แถมคะแนนให้
+
+    if (gotPoint) state.score += 1;
+
+    stopRunawayWatch();
+    const nodes = [...choicesBox.querySelectorAll(".choice")];
+    nodes.forEach((b) => {
+      b.classList.add("locked");
+      b.classList.remove("enter", "giggle");
+      b.style.pointerEvents = "none";
+      b.style.removeProperty("transform");   // ให้ปุ่มที่วิ่งหนีเด้งกลับที่เดิม
+    });
+
+    // ไล่เฉลยทีละตัวเลือกให้ดูมีจังหวะ
+    const picked = nodes.find((b) => state.selected.includes(b.dataset.key));
+    let firstCorrectNode = null;
+    nodes.forEach((b, i) => {
+      const k = b.dataset.key;
+      if (!firstCorrectNode && correctKeys.includes(k)) firstCorrectNode = b;
+      setTimeout(() => {
+        const mark = b.querySelector(".mark");
+        if (correctKeys.includes(k)) {
+          b.classList.remove("selected", "dim"); b.classList.add("correct"); mark.textContent = "✓";
+          sfx("tick");
+        } else if (state.selected.includes(k)) {
+          b.classList.add("wrong"); mark.textContent = "✕";
+        } else {
+          b.classList.add("dim");
+        }
+      }, 80 + i * 55);
+    });
+
+    // เก็บลงประวัติการตอบ
+    const labelOf = (k) => (q.choices.find((c) => c.key === k) || {}).label || k;
+    state.log.push({
+      n: state.qIndex + 1,
+      q: q.question,
+      picked: state.selected.map(labelOf).join(", ") || "(ไม่ได้เลือก)",
+      answer: q.allRight ? "ตอบข้อไหนก็ถูก" : correctKeys.map(labelOf).join(", "),
+      ok: gotPoint,
+    });
+
+    // กล่องเฉลย + เอฟเฟกต์ฉลอง ตามหลังการไล่เฉลย
+    setTimeout(() => {
+      $("quiz-reveal-title").textContent =
+        q.freebie ? "🎁 ข้อนี้แถมคะแนนให้เลย 💗"
+        : q.allRight ? "🌸 ถูกทุกข้อเลย!"
+        : gotPoint ? "🎉 ถูกต้องงง!" : "😆 ยังไม่ใช่น้า…";
+      $("quiz-reveal-text").textContent = q.explanation || "";
+      revealBox.classList.add("show");
+      $("quiz-score-label").textContent = `⭐ ${state.score} คะแนน`;
+      $("btn-multi-check").classList.add("hidden");
+      celebrate(gotPoint, q, gotPoint ? (picked || firstCorrectNode) : null);
+      showNext();
+    }, 80 + nodes.length * 55);
+  }
+
+  /* ---- เอฟเฟกต์ตอนเฉลย / ตอบถูก ---- */
+  function celebrate(ok, q, node) {
+    const card = $("screen-quiz").querySelector(".card");
+    card.classList.remove("flash-ok", "flash-no"); void card.offsetWidth;
+    card.classList.add(ok ? "flash-ok" : "flash-no");
+
+    if (!ok) { showStamp("ยังไม่ใช่~ 😆", false); sfx("no"); return; }
+
+    showStamp(q.freebie ? "แถมให้! 🎁" : q.allRight ? "ถูกทุกข้อ! 🌸" : "ถูกต้อง! 🎉", true);
+    floatPlusOne();
+    const chip = $("quiz-score-label");
+    chip.classList.remove("pop"); void chip.offsetWidth; chip.classList.add("pop");
+    if (node) burstFrom(node, FX.burst); else rain(14);
+    sfx("ok");
+  }
+
+  function showStamp(text, ok) {
+    const wrap = $("stamp"), inner = wrap.firstElementChild;
+    inner.textContent = text;
+    inner.classList.toggle("ok", !!ok);
+    wrap.classList.remove("show"); void wrap.offsetWidth; wrap.classList.add("show");
+    clearTimeout(showStamp._t);
+    showStamp._t = setTimeout(() => wrap.classList.remove("show"), 1250);
+  }
+
+  function floatPlusOne() {
+    const r = $("quiz-score-label").getBoundingClientRect();
+    const s = el("span", "plusone");
+    s.textContent = "+1";
+    s.style.left = r.left + r.width / 2 + "px";
+    s.style.top = r.top - 4 + "px";
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 1200);
+  }
+
+  /* ---- เสียงเอฟเฟกต์ (สังเคราะห์เอง ไม่ต้องใช้ไฟล์เสียง) ---- */
+  let actx = null, sfxOn = true;
+  function sfx(kind) {
+    if (!sfxOn) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === "suspended") actx.resume();
+      const map = { ok: [660, 880, 1175], no: [300, 208], tick: [1320], tap: [740] };
+      const notes = map[kind] || map.tap;
+      notes.forEach((f, i) => {
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = kind === "no" ? "square" : "triangle";
+        o.frequency.value = f;
+        const t = actx.currentTime + i * 0.085;
+        const peak = kind === "tick" ? 0.035 : kind === "no" ? 0.06 : 0.1;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(peak, t + 0.015);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + (kind === "tick" ? 0.1 : 0.24));
+        o.connect(g); g.connect(actx.destination);
+        o.start(t); o.stop(t + 0.28);
+      });
+    } catch (e) { /* เบราว์เซอร์ไม่รองรับก็ข้ามไป */ }
+  }
+
+  /* ---- คำถามปลายเปิด ---- */
+  $("quiz-text-input").addEventListener("input", (e) => {
+    $("quiz-text-count").textContent = e.target.value.trim().length;
+  });
+  $("btn-text-submit").addEventListener("click", () => {
+    if (state.answered) return;
+    const q = QUIZ[state.qIndex];
+    const val = $("quiz-text-input").value.trim();
+    if (!val) { toast("พิมพ์อะไรสักหน่อยน้า ✍️"); $("quiz-text-input").focus(); return; }
+    state.textAnswers[state.qIndex] = val;
+    state.answered = true;
+    state.scorable += 1;
+    state.score += 1;                        // ข้อปลายเปิด: เขียนมาก็ได้คะแนนเลย
+    state.log.push({ n: state.qIndex + 1, q: q.question, picked: val, answer: "", ok: true, type: "text" });
+    $("quiz-text-input").setAttribute("readonly", "readonly");
+    $("quiz-reveal-title").textContent = "💌 บันทึกคำตอบแล้ว +1 คะแนน";
+    $("quiz-reveal-text").textContent = q.note || "เก็บคำตอบนี้ไว้ให้แล้วน้า";
+    revealBox.classList.add("show");
+    $("btn-text-submit").classList.add("hidden");
+    $("quiz-score-label").textContent = `⭐ ${state.score} คะแนน`;
+    const chip = $("quiz-score-label");
+    chip.classList.remove("pop"); void chip.offsetWidth; chip.classList.add("pop");
+    burstFrom($("quiz-text-input"), FX.burst);
+    floatPlusOne();
+    showStamp("บันทึกแล้ว +1 💌", true);
+    sfx("ok");
+    showNext();
+  });
+
+  function showNext() {
+    const btn = $("btn-next");
+    btn.classList.remove("hidden");
+    btn.textContent = state.qIndex === QUIZ.length - 1 ? "ดูผลลัพธ์ 🏆" : "ข้อต่อไป ➡️";
+    setTimeout(() => btn.scrollIntoView({ behavior: "smooth", block: "nearest" }), 120);
+  }
+
+  $("btn-next").addEventListener("click", () => {
+    if (state.qIndex >= QUIZ.length) return;
+    state.qIndex += 1;
+    $("quiz-text-input").removeAttribute("readonly");
+    if (state.qIndex >= QUIZ.length) { goToResult(); return; }
+    const card = $("screen-quiz").querySelector(".card");
+    card.style.animation = "none"; void card.offsetWidth;
+    card.style.animation = "screenIn .45s var(--ease) both";
+    renderQuestion();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  /* ========================================================================
+     SCREEN 3 — สรุปผล
+     ======================================================================== */
+  function goToResult() {
+    const total = state.scorable || 1;
+    const ratio = state.score / total;
+
+    state.prizeWon = ratio >= 0.8;           // ทำได้ 80% ขึ้นไป = ได้รางวัลพิเศษ
+
+    $("result-score").textContent = `${state.score}/${state.scorable}`;
+    $("result-emoji").textContent = state.prizeWon ? "🏆" : ratio >= 0.5 ? "🎯" : "🫣";
+    $("result-message").textContent =
+      state.prizeWon ? `ทะลุ 80% แล้ว! รับรางวัลพิเศษไปเลยยย 🎉 (${Math.round(ratio * 100)}%)`
+      : ratio >= 0.5 ? "ก็โอเคอยู่นะ… แต่ยังไม่ถึง 80% เลยอดรางวัลพิเศษ 😂"
+      : "เอ๊ะ นี่ใช่เมลตัวจริงป่ะเนี่ย 👀 ยังไงก็รักน้า";
+
+    const prize = $("result-prize");
+    prize.classList.toggle("hidden", !state.prizeWon);
+
+    // บันทึกประวัติการตอบรอบนี้ (เก็บไว้ 20 รอบล่าสุด)
+    const hist = loadJSON(KEY.history, []);
+    hist.unshift({ at: new Date().toISOString(), score: state.score, total: state.scorable, prize: state.prizeWon, items: state.log.slice() });
+    saveJSON(KEY.history, hist.slice(0, 20));
+
+    const box = $("result-answers");
+    box.innerHTML = "";
+    QUIZ.forEach((q, i) => {
+      if (q.type !== "text" || !state.textAnswers[i]) return;
+      const d = el("div", "quote px-4 py-3");
+      d.innerHTML = `<p class="text-xs mb-1" style="color:var(--muted)">${q.question}</p>
+                     <p class="font-cute">“${state.textAnswers[i]}”</p>`;
+      box.appendChild(d);
+    });
+
+    showScreen("screen-result", "quiz");
+
+    const ring = $("result-ring");
+    const C = 2 * Math.PI * 52;
+    ring.style.strokeDasharray = C;
+    ring.style.strokeDashoffset = C;
+    setTimeout(() => { ring.style.strokeDashoffset = C * (1 - ratio); }, 420);
+    setTimeout(() => rain(26), 500);
+    if (state.prizeWon) {
+      setTimeout(() => {
+        showStamp("ได้รางวัลพิเศษ! 🎁", true);
+        sfx("ok"); rain(20);
+        burstFrom($("result-prize"), 12);
+      }, 1500);
+    }
+  }
+
+  $("btn-goto-gallery").addEventListener("click", () => showScreen("screen-gallery", "gallery"));
+  $("btn-goto-cake").addEventListener("click", () => {
+    showScreen("screen-cake", "cake");
+    setTimeout(enterCakeScene, 260);          // ปิดไฟ + จุดเทียนหลังหน้าเปลี่ยนเสร็จ
+  });
+
+  /* ========================================================================
+     SCREEN 5 — เค้ก / เป่าเทียน
+     ======================================================================== */
+  const CANDLES = [...document.querySelectorAll(".candle")];
+  const glowEl = document.querySelector(".glow");
+  let candlesLeft = CANDLES.length;
+
+  // ความสว่างของแสงเทียน = จำนวนเทียนที่ยังติดอยู่
+  function updateGlow() {
+    const lit = CANDLES.filter((c) => c.classList.contains("lit") && !c.classList.contains("out")).length;
+    glowEl.style.opacity = lit ? 0.34 + lit * 0.2 : 0;
+    glowEl.style.transform = `translate(-50%,-50%) scale(${lit ? 0.62 + lit * 0.14 : 0.4})`;
+  }
+
+  // เข้าหน้าเค้ก: ปิดไฟก่อน แล้วค่อยจุดเทียนทีละเล่ม
+  function enterCakeScene() {
+    document.body.classList.add("lights-off");
+    updateGlow();
+    CANDLES.forEach((c, i) => {
+      setTimeout(() => {
+        c.classList.add("lit");
+        updateGlow();
+        sfx("tick");
+      }, 1250 + i * 300);
+    });
+    setTimeout(() => { $("cake-subtitle").textContent = "แตะที่เทียนทีละเล่ม หรือกดปุ่มเป่าด้านล่างก็ได้น้า"; }, 2250);
+  }
+
+  function puffAt(candle) {
+    const scene = $("cake-scene");
+    const r = candle.getBoundingClientRect(), s = scene.getBoundingClientRect();
+    const p = el("span", "puff");
+    p.textContent = "💨";
+    p.style.left = r.left - s.left - 6 + "px";
+    p.style.top = r.top - s.top - 30 + "px";
+    scene.appendChild(p);
+    setTimeout(() => p.remove(), 800);
+  }
+
+  function blowCandle(candle) {
+    if (!candle || !candle.classList.contains("lit") || candle.classList.contains("out")) return;
+    candle.classList.add("out");
+    candlesLeft -= 1;
+    puffAt(candle);
+    updateGlow();
+    sfx("no");
+
+    // เค้กเด้งรับแรงลม
+    const scene = $("cake-scene");
+    scene.classList.remove("squash"); void scene.offsetWidth; scene.classList.add("squash");
+
+    const left = $("candles-left");
+    if (left) left.textContent = candlesLeft;
+    if (candlesLeft > 0) {
+      $("cake-subtitle").textContent = candlesLeft === 1 ? "อีกเล่มเดียวเองงง 🕯️" : "เก่งมาก! เป่าต่อเลย 💨";
+    } else {
+      allCandlesOut();
+    }
+  }
+  CANDLES.forEach((c) => c.addEventListener("click", () => blowCandle(c)));
+  $("btn-blow").addEventListener("click", () => blowCandle(CANDLES.find((c) => c.classList.contains("lit") && !c.classList.contains("out"))));
+
+  function allCandlesOut() {
+    const scene = $("cake-scene");
+    $("cake-title").textContent = "ขอพรสำเร็จแล้ว ✨";
+    $("cake-subtitle").textContent = "มืดสนิทเลย… อธิษฐานในใจเบาๆ นะ 🤫";
+    $("cake-hint").textContent = "";
+    $("btn-blow").classList.add("hidden");
+
+    // มืดสนิทสักครู่ → แล้วค่อยเปิดไฟ
+    setTimeout(() => {
+      document.body.classList.remove("lights-off");
+      $("flash").classList.remove("on"); void $("flash").offsetWidth; $("flash").classList.add("on");
+      scene.classList.remove("squash", "cheer"); void scene.offsetWidth; scene.classList.add("cheer");
+      $("cake-title").textContent = "เปิดไฟ! Happy Birthday 🎉";
+      $("cake-hint").textContent = "ขอให้พรที่ขอเป็นจริงทุกข้อเลยน้า 💗";
+      rain(30);
+      sfx("ok");
+    }, 1400);
+
+    setTimeout(() => showScreen("screen-letter", "letter"), 4200);
+  }
+
+  /* ========================================================================
+     SCREEN 6 — จดหมาย
+     ======================================================================== */
+  $("letter-main-text").textContent = MAIN_WISH;
+  $("letter-short-text").textContent = SHORT_WISH;
+
+  $("envelope").addEventListener("click", () => {
+    const env = $("envelope");
+    if (env.classList.contains("open")) return;
+    env.classList.add("open");
+    rain(30);
+    sfx("ok");
+    setTimeout(() => {
+      $("letter-intro").classList.add("hidden");
+      $("letter-content").classList.remove("hidden");
+      $("letter-content").style.animation = "screenIn .6s var(--ease) both";
+    }, 900);
+  });
+
+  // กดแล้วมีทางเดียวคือกด "ตกลง" เท่านั้น ถึงจะได้อ่านความคิดเห็นของผู้สร้าง
+  $("btn-show-short").addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    if ($("short-reveal").classList.contains("show")) return;
+    await askConfirm({
+      emoji: "👀",
+      title: "แจ้งให้ทราบก่อนน้า",
+      text: "กดแล้วต้องตอบ “ตกลง” เท่านั้นนะ ไม่มีปุ่มยกเลิกให้ 😏 พร้อมอ่านความคิดเห็นของผู้สร้างหรือยัง?",
+      okLabel: "ตกลง (ไม่มีทางเลือกอื่น)",
+      onlyOk: true,
+    });
+    $("short-reveal").classList.add("show");
+    btn.textContent = "ความคิดเห็นของผู้สร้าง 👇";
+    burstFrom(btn, FX.burst);
+    sfx("ok");
+  });
+
+  /* ========================================================================
+     แผ่นข้อมูล: ประวัติการตอบ / คอมเมนต์ถึงผู้สร้าง
+     ======================================================================== */
+  function openSheet(title, html) {
+    $("sheet-title").textContent = title;
+    $("sheet-body").innerHTML = html;
+    $("sheet").classList.remove("hidden");
+    sfx("tap");
+  }
+  function closeSheet() { $("sheet").classList.add("hidden"); }
+  $("sheet-close").addEventListener("click", closeSheet);
+  $("sheet").querySelector(".sheet-backdrop").addEventListener("click", closeSheet);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); });
+
+  const storeNote = () => storageOK
+    ? `<p class="text-xs text-center mt-4" style="color:var(--muted)">💾 ข้อมูลถูกเก็บไว้ในเครื่องนี้ · รีเฟรชหรือกดเล่นใหม่ก็ไม่หาย</p>`
+    : `<p class="text-xs text-center mt-4" style="color:var(--no)">⚠️ เบราว์เซอร์นี้ไม่ให้บันทึกลงเครื่อง ข้อมูลจะอยู่แค่จนกว่าจะปิดหน้านี้</p>`;
+
+  $("btn-history").addEventListener("click", () => {
+    const hist = loadJSON(KEY.history, []);
+    let html = "";
+    if (!hist.length) {
+      html = `<div class="empty">ยังไม่มีประวัติเลยน้า ลองเล่นควิซให้จบสักรอบก่อนนะ 📝</div>`;
+    } else {
+      html = hist.map((s, i) => {
+        const rows = (s.items || []).map((it) => {
+          const showAns = it.type !== "text" && it.answer && it.answer !== it.picked;
+          return `
+          <div class="hist-row">
+            <span class="n">${it.n}</span>
+            <span>
+              <b>${esc(it.q)}</b><br />
+              <span style="color:var(--muted)">ตอบ:</span> ${esc(it.picked)}
+              <span style="color:var(--${it.ok ? "ok" : "no"})"> ${it.ok ? "✓" : "✕"}</span>
+              ${showAns ? `<br /><span style="color:var(--muted)">เฉลย: ${esc(it.answer)}</span>` : ""}
+            </span>
+          </div>`;
+        }).join("");
+        return `<details class="hist" ${i === 0 ? "open" : ""}>
+            <summary>
+              <span>${i === 0 ? "🕐 รอบล่าสุด" : "🗂️ รอบก่อนหน้า"} · ${esc(thaiDate(s.at))}</span>
+              <span class="chip">${s.score}/${s.total}${s.prize ? " 🏆" : ""}</span>
+            </summary>
+            <div class="mt-2">${rows}</div>
+          </details>`;
+      }).join("");
+    }
+    openSheet("📋 ประวัติการตอบ", html + storeNote());
+  });
+
+  $("btn-comment").addEventListener("click", () => renderComments());
+
+  const lastName = () => { try { return localStorage.getItem("hbd-mel-name") || ""; } catch (e) { return memStore.name || ""; } };
+  const rememberName = (n) => { try { localStorage.setItem("hbd-mel-name", n); } catch (e) { memStore.name = n; } };
+
+  async function renderComments(flash) {
+    const local = loadJSON(KEY.comments, []);
+    const pending = loadJSON(KEY.outbox, []).length;
+
+    const draw = (list, loading) => {
+      const items = list.length
+        ? list.map((c) => `<div class="cmt">
+              <p class="text-xs mb-1" style="color:var(--muted)">
+                ${c.name ? `<b style="color:var(--primary)">${esc(c.name)}</b> · ` : ""}${esc(thaiDate(c.at))}
+              </p>
+              <p class="font-cute">${esc(c.text)}</p>
+            </div>`).join("")
+        : `<div class="empty">ยังไม่มีคอมเมนต์เลย… เขียนอันแรกให้หน่อยน้า 🥺</div>`;
+
+      openSheet("💬 คอมเมนต์ถึงผลงานของผู้สร้าง", `
+        <p class="text-sm font-cute mb-3" style="color:var(--muted)">อยากบอกอะไรคนทำเว็บนี้บ้าง? เขียนไว้ได้เลย (ลบไม่ได้นะ เก็บไว้ตลอด 😆)</p>
+        <input id="cmt-name" class="field font-cute mb-2" placeholder="ชื่อของคุณ (ไม่ใส่ก็ได้)" value="${esc(lastName())}" />
+        <textarea id="cmt-input" rows="3" class="field font-cute resize-none" placeholder="พิมพ์คอมเมนต์ที่นี่…"></textarea>
+        <button id="cmt-send" class="btn btn-primary w-full mt-3">ส่งคอมเมนต์ 🚀</button>
+        ${flash ? `<p class="text-sm text-center mt-3" style="color:var(--ok)">${esc(flash)}</p>` : ""}
+        <p class="text-xs mt-5 mb-2" style="color:var(--muted)">
+          คอมเมนต์ทั้งหมด (${list.length})${loading ? " · กำลังโหลดของคนอื่น…" : ""}${pending ? ` · รอส่ง ${pending} อัน` : ""}
+        </p>
+        ${items}
+        ${remoteOn()
+          ? `<p class="text-xs text-center mt-4" style="color:var(--muted)">☁️ คอมเมนต์ถูกส่งไปหาผู้สร้างด้วย</p>`
+          : storeNote()}
+      `);
+
+      $("cmt-send").addEventListener("click", async () => {
+        const val = $("cmt-input").value.trim();
+        if (!val) { toast("พิมพ์อะไรสักหน่อยน้า ✍️"); $("cmt-input").focus(); return; }
+        const name = $("cmt-name").value.trim().slice(0, 60);
+        rememberName(name);
+        const entry = { at: new Date().toISOString(), name, text: val.slice(0, 500) };
+
+        const all = loadJSON(KEY.comments, []);
+        all.unshift(entry);
+        saveJSON(KEY.comments, all);          // เก็บในเครื่องก่อนเสมอ — ไม่มีวันหาย
+        sfx("ok");
+        burstFrom($("cmt-send"), FX.burst);
+
+        if (remoteOn()) {
+          const sent = await remotePost(entry);
+          if (!sent) { const box = loadJSON(KEY.outbox, []); box.push(entry); saveJSON(KEY.outbox, box); }
+          renderComments(sent ? "ส่งถึงผู้สร้างแล้ว ขอบคุณน้า 💗" : "บันทึกไว้แล้ว เดี๋ยวส่งให้อัตโนมัติตอนเน็ตกลับมา 📡");
+        } else {
+          renderComments("บันทึกคอมเมนต์แล้ว ขอบคุณน้า 💗");
+        }
+      });
+    };
+
+    draw(local, remoteOn() && REMOTE.showOthers);
+
+    // ถ้าตั้งที่เก็บกลางไว้ ค่อยดึงของทุกคนมารวมทีหลัง (ไม่ให้หน้าค้างรอ)
+    if (remoteOn() && REMOTE.showOthers) {
+      const remote = await remoteList();
+      if (remote && !$("sheet").classList.contains("hidden")) {
+        const seen = new Set();
+        const merged = [...remote, ...local]
+          .filter((c) => { const k = (c.name || "") + "|" + c.text; if (seen.has(k)) return false; seen.add(k); return true; })
+          .sort((a, b) => new Date(b.at) - new Date(a.at));
+        const draft = $("cmt-input") ? $("cmt-input").value : "";   // ไม่ให้ข้อความที่กำลังพิมพ์หาย
+        draw(merged, false);
+        if (draft && $("cmt-input")) $("cmt-input").value = draft;
+      }
+    }
+  }
+
+  /* ---- กล่องยืนยัน (คืนค่า true/false) ---- */
+  function askConfirm(opt) {
+    const m = $("modal");
+    $("modal-emoji").textContent = opt.emoji || "❓";
+    $("modal-title").textContent = opt.title || "แน่ใจนะ?";
+    $("modal-text").textContent = opt.text || "";
+    $("modal-ok").textContent = opt.okLabel || "ตกลง";
+    $("modal-cancel").textContent = opt.cancelLabel || "ไว้ก่อน";
+    $("modal-cancel").classList.toggle("hidden", !!opt.onlyOk);   // บางกล่องมีแต่ปุ่มตกลง
+    m.classList.remove("hidden");
+    sfx("tap");
+    return new Promise((resolve) => {
+      const done = (val) => {
+        m.classList.add("hidden");
+        $("modal-ok").removeEventListener("click", onOk);
+        $("modal-cancel").removeEventListener("click", onNo);
+        m.querySelector(".modal-backdrop").removeEventListener("click", onNo);
+        document.removeEventListener("keydown", onKey);
+        resolve(val);
+      };
+      const onOk = () => done(true);
+      const onNo = () => { if (opt.onlyOk) { sfx("no"); return; } done(false); };   // ปิดไม่ได้ ถ้ามีแต่ปุ่มตกลง
+      const onKey = (ev) => { if (ev.key === "Escape") onNo(); if (ev.key === "Enter") done(true); };
+      $("modal-ok").addEventListener("click", onOk);
+      $("modal-cancel").addEventListener("click", onNo);
+      m.querySelector(".modal-backdrop").addEventListener("click", onNo);
+      document.addEventListener("keydown", onKey);
+      setTimeout(() => $("modal-ok").focus(), 60);
+    });
+  }
+
+  $("btn-more-wish").addEventListener("click", (e) => {
+    $("letter-random-text").textContent = WISH_POOL[(Math.random() * WISH_POOL.length) | 0];
+    $("random-reveal").classList.add("show");
+    burstFrom(e.currentTarget, FX.burst);
+  });
+
+  $("btn-replay").addEventListener("click", () => location.reload());
+
+  /* ========================================================================
+     TOOLBAR — ธีม / เพลง / คำอวยพรสุ่ม
+     ======================================================================== */
+  $("btn-theme").addEventListener("click", () => {
+    state.themeIndex = (state.themeIndex + 1) % state.themes.length;
+    const t = state.themes[state.themeIndex];
+    document.documentElement.setAttribute("data-theme", t);
+    toast(`เปลี่ยนธีมเป็น ${THEME_NAME[t]}`);
+  });
+
+  $("btn-sfx").addEventListener("click", () => {
+    sfxOn = !sfxOn;
+    $("btn-sfx").textContent = sfxOn ? "🔔" : "🔕";
+    toast(sfxOn ? "เปิดเสียงเอฟเฟกต์แล้ว 🔔" : "ปิดเสียงเอฟเฟกต์แล้ว 🔕");
+    sfx("tap");
+  });
+
+  const bgm = $("bgm");
+  let musicOn = false;
+  $("btn-music").addEventListener("click", () => {
+    musicOn = !musicOn;
+    $("btn-music").textContent = musicOn ? "🔊" : "🔇";
+    if (musicOn) {
+      bgm.volume = 0.5;
+      bgm.play().catch(() => { musicOn = false; $("btn-music").textContent = "🔇"; toast("ยังไม่ได้ใส่ไฟล์เพลง (music.mp3) น้า 🎵"); });
+    } else bgm.pause();
+  });
+
+  $("btn-wish").addEventListener("click", (e) => {
+    toast(WISH_POOL[(Math.random() * WISH_POOL.length) | 0]);
+    burstFrom(e.currentTarget, FX.burst);
+  });
+})();
+</script>
+</body>
+</html>
