@@ -3,14 +3,14 @@
 <head>
 <!--
   ============================================================================
-  🎂 Happy Birthday, Mel! — Single File Web App (HTML + Tailwind CDN + Vanilla JS)
+  🎂 Happy Birthday, Mel! — Static Web App (HTML + Tailwind CDN + Vanilla JS)
   Developer: Pyopapaya
 
   ✅ จุดที่ต้องแก้ก่อนส่งให้เมล (ค้นหาคำว่า "TODO" ในไฟล์นี้)
     1. รหัสผ่านหน้าล็อก   -> CONFIG.password ในสคริปต์ด้านล่าง
-    2. รูปภาพความทรงจำ    -> ส่วน "MEMORY GALLERY" (แทน .photo-empty ด้วย <img>)
-    3. แคปชั่นใต้รูป       -> แก้ข้อความในแท็ก <p class="cap"> ของแต่ละกรอบรูป
-    4. ไฟล์เพลงพื้นหลัง    -> <source src="music.mp3">
+    2. รูปภาพความทรงจำ    -> assets/photos/ (18 รูป พร้อมขนาดสำหรับมือถือ)
+    3. แคปชั่นใต้รูป       -> assets/memories.js
+    4. เพลงประกอบ         -> assets/music.js (YouTube MV ทางการ)
     5. คำอวยพรสุ่ม        -> ตัวแปร WISH_POOL
     6. คำอวยพรหลัก        -> ตัวแปร MAIN_WISH / SHORT_WISH
     7. คอมเมนต์ข้ามเครื่อง -> ตัวแปร REMOTE (มีคู่มือตั้งค่าเขียนไว้ตรงนั้นครบ)
@@ -19,6 +19,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#e11d48" />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
 <title>Happy Birthday Mel 🎂</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
@@ -549,6 +550,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   .choice{ font-size:1rem }
 }
 </style>
+<link rel="stylesheet" href="assets/memories.css" />
 </head>
 <body class="antialiased">
 
@@ -606,8 +608,17 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   <button id="btn-wish"  class="tool" title="สุ่มคำอวยพร" aria-label="สุ่มคำอวยพร">🎁</button>
 </div>
 
-<!-- TODO 4: ใส่ path ไฟล์เพลงจริงตรง src -->
-<audio id="bgm" loop preload="none"><source src="music.mp3" type="audio/mpeg" /></audio>
+<aside class="music-card" aria-label="เพลงประกอบวันเกิด">
+  <div class="music-copy">
+    <span class="music-kicker">A LITTLE SOUNDTRACK FOR YOU ♫</span>
+    <p class="music-title">ยินดีที่ไม่รู้จัก</p>
+    <p class="music-artist">25hours · เพลงของวันนี้ 💗</p>
+    <p id="music-status" role="status">กำลังเตรียมเพลง…</p>
+    <button id="music-toggle" class="music-toggle" type="button" aria-pressed="false">▶ เล่นเพลง</button>
+    <a href="https://www.youtube.com/watch?v=Whu6oBYdYvk" target="_blank" rel="noopener noreferrer">ดู MV ทางการบน YouTube ↗</a>
+  </div>
+  <div class="music-video"><div id="youtube-player"></div></div>
+</aside>
 
 
 <!-- ==========================================================================
@@ -753,24 +764,18 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 
 <!-- ==========================================================================
      SCREEN 4 — MEMORY GALLERY
-     TODO 2: แทน <div class="photo-empty">📷</div> ด้วย
-             <img src="รูปของคุณ.jpg" alt="" class="w-full h-full object-cover" />
-     TODO 3: แก้ข้อความในแท็ก <p class="cap"> ให้เป็นแคปชั่นจริง
+     รูปและแคปชั่น: assets/memories.js · รูป WebP: assets/photos/
      ========================================================================== -->
 <section id="screen-gallery" class="screen">
   <div class="wrap max-w-3xl text-center">
     <p class="chip mx-auto mb-3">Chapter 02</p>
-    <h2 class="text-2xl md:text-3xl font-medium mb-1">📸 เรื่องราวของเรา</h2>
-    <p class="text-sm mb-8 font-cute" style="color:var(--muted)">ความทรงจำเล็กๆ ที่อยากเก็บไว้ให้นานที่สุด</p>
+    <h2 class="text-2xl md:text-3xl font-medium mb-1">วันธรรมดาที่พิเศษ เพราะมีเธอ 📸</h2>
+    <p class="text-sm mb-8 font-cute" style="color:var(--muted)">18 ความทรงจำ · หลายรอยยิ้ม · เมลคนเดิมที่น่ารักเสมอ</p>
 
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-9">
-      <figure class="polaroid"><div class="frame"><div class="photo-empty">📷</div></div><p class="cap">[ใส่แคปชั่นรูปที่ 1]</p></figure>
-      <figure class="polaroid"><div class="frame"><div class="photo-empty">📷</div></div><p class="cap">[ใส่แคปชั่นรูปที่ 2]</p></figure>
-      <figure class="polaroid"><div class="frame"><div class="photo-empty">📷</div></div><p class="cap">[ใส่แคปชั่นรูปที่ 3]</p></figure>
-      <figure class="polaroid"><div class="frame"><div class="photo-empty">📷</div></div><p class="cap">[ใส่แคปชั่นรูปที่ 4]</p></figure>
-      <figure class="polaroid"><div class="frame"><div class="photo-empty">📷</div></div><p class="cap">[ใส่แคปชั่นรูปที่ 5]</p></figure>
-      <figure class="polaroid"><div class="frame"><div class="photo-empty">📷</div></div><p class="cap">[ใส่แคปชั่นรูปที่ 6]</p></figure>
-    </div>
+    <div class="album-intro"><span class="font-script">Dear Mel,</span><p>เก็บช่วงเวลาเหล่านี้ไว้<br />แล้วมาเติมความทรงจำดีๆ อีกเยอะๆ เลยนะ ♡</p><span class="album-sticker" aria-hidden="true">made with<br />♡ & smiles</span></div>
+    <p class="album-tip">แตะรูปเพื่อเปิดดูเต็มๆ แล้วเลื่อนดูทีละความทรงจำได้เลย ✨</p>
+    <div id="memory-gallery" class="memory-grid"></div>
+    <p class="album-ending font-cute">รูปอาจหยุดเวลาไม่ได้… แต่เก็บรอยยิ้มไว้ได้เสมอ 💌</p>
 
     <button id="btn-goto-cake" class="btn btn-primary">ไปต่อกันที่เค้ก 🎂</button>
   </div>
@@ -1033,13 +1038,13 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     {
       type: "single",
       question: "เจ้าของวันเกิดชอบดูหนังอะไร?",
-      explanation: "โสดแบบเราๆ ดูหนังคนเดียวแล้วมันเหงา 🥲",
+      explanation: "หนังตลกมันทางของพี่! ชีวิตต้องมีเสียงหัวเราะไว้ก่อน 🤣",
       choices: [
         { key: "A", label: "หนังไก่", emoji: "🐔" },
         { key: "B", label: "หนังผี", emoji: "👻" },
-        { key: "C", label: "หนังอะไรก็ได้ขอแค่ดูกับเธอ", emoji: "💕", correct: true },
+        { key: "C", label: "หนังอะไรก็ได้ขอแค่ดูกับเธอ", emoji: "💕" },
         { key: "D", label: "หนังหมา", emoji: "🐶" },
-        { key: "E", label: "หนังตลกมันทางของพี่", emoji: "🤣" },
+        { key: "E", label: "หนังตลกมันทางของพี่", emoji: "🤣", correct: true },
         { key: "F", label: "หนังโรแมนติก ฟินๆๆๆ", emoji: "🌹" },
       ],
     },
@@ -2106,22 +2111,19 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     sfx("tap");
   });
 
-  const bgm = $("bgm");
-  let musicOn = false;
-  $("btn-music").addEventListener("click", () => {
-    musicOn = !musicOn;
-    $("btn-music").textContent = musicOn ? "🔊" : "🔇";
-    if (musicOn) {
-      bgm.volume = 0.5;
-      bgm.play().catch(() => { musicOn = false; $("btn-music").textContent = "🔇"; toast("ยังไม่ได้ใส่ไฟล์เพลง (music.mp3) น้า 🎵"); });
-    } else bgm.pause();
-  });
-
   $("btn-wish").addEventListener("click", (e) => {
     toast(WISH_POOL[(Math.random() * WISH_POOL.length) | 0]);
     burstFrom(e.currentTarget, FX.burst);
   });
 })();
 </script>
+<dialog id="photo-viewer" aria-labelledby="photo-caption">
+  <div class="viewer-top"><span id="photo-count"></span><button id="photo-close" type="button" aria-label="ปิดรูปภาพ">✕</button></div>
+  <img id="photo-full" alt="" />
+  <p id="photo-caption" class="font-cute"></p>
+  <div class="viewer-controls"><button id="photo-prev" type="button" aria-label="รูปก่อนหน้า">←</button><span>เก็บไว้ในความทรงจำ ♡</span><button id="photo-next" type="button" aria-label="รูปถัดไป">→</button></div>
+</dialog>
+<script src="assets/memories.js"></script>
+<script src="assets/music.js"></script>
 </body>
 </html>

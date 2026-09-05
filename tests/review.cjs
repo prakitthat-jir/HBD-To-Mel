@@ -8,9 +8,13 @@ const path = require('node:path');
 let browser, server, origin;
 before(async () => {
   server = http.createServer((req, res) => {
-    if (req.url !== '/') { res.writeHead(404).end(); return; }
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.end(fs.readFileSync(path.join(__dirname, '..', 'index.html')));
+    const root = path.resolve(__dirname, '..');
+    const requested = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
+    const file = path.resolve(root, requested === '/' ? 'index.html' : `.${requested}`);
+    if (!file.startsWith(root + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) { res.writeHead(404).end(); return; }
+    const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.webp': 'image/webp' };
+    res.setHeader('Content-Type', mime[path.extname(file)] || 'application/octet-stream');
+    res.end(fs.readFileSync(file));
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   origin = `http://127.0.0.1:${server.address().port}/`;
@@ -24,6 +28,16 @@ async function setup(t, options = {}) {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   t.after(() => assert.deepEqual(errors, [], 'no uncaught browser errors'));
+  await page.route('https://www.youtube.com/iframe_api', route => route.fulfill({ contentType: 'text/javascript', body: `
+    window.YT = { PlayerState: { PLAYING:1, PAUSED:2, ENDED:0 }, Player: function(id, options) {
+      window.__musicOptions = options; window.__musicCalls = [];
+      this.playVideo = () => { window.__musicCalls.push('play'); options.events.onStateChange({data:1}); };
+      this.pauseVideo = () => { window.__musicCalls.push('pause'); options.events.onStateChange({data:2}); };
+      this.seekTo = time => window.__musicCalls.push('seek:' + time);
+      this.setVolume = () => {};
+      setTimeout(() => options.events.onReady({target:this}), 0);
+    }}; window.onYouTubeIframeAPIReady();
+  ` }));
   // Every Apps Script request is intercepted; tests never write to the real sheet.
   await page.route('https://script.google.com/**', options.remote || (route => route.fulfill({
     contentType: 'application/json', body: route.request().method() === 'POST' ? '{"ok":true}' : '[]'
@@ -46,7 +60,7 @@ async function next(page) {
 for (const width of [1280, 390]) test(`full birthday flow at ${width}px, exact multi-select and safe text`, async t => {
   const page = await setup(t, { viewport: { width, height: 900 } });
   await page.locator('#btn-start').click();
-  for (const answer of ['B', 'D', 'B', 'F', 'C', 'C', 'A']) {
+  for (const answer of ['B', 'D', 'B', 'F', 'E', 'C', 'A']) {
     await page.locator(`#quiz-choices [data-key="${answer}"]`).click();
     await next(page);
   }
@@ -72,6 +86,26 @@ for (const width of [1280, 390]) test(`full birthday flow at ${width}px, exact m
   assert.equal(await page.evaluate(() => window.injected), undefined);
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('hbd-mel-history')).length), 1);
   await page.locator('#btn-goto-gallery').click();
+  await page.locator('#screen-gallery.active').waitFor();
+  assert.equal(await page.locator('.memory-card').count(), 18);
+  for (const photo of await page.locator('.memory-card img').all()) {
+    await photo.scrollIntoViewIfNeeded();
+    await photo.evaluate(img => img.decode());
+    assert.ok(await photo.evaluate(img => img.naturalWidth > 0));
+  }
+  await page.locator('#screen-gallery').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: path.join(__dirname, '..', 'test-results', `gallery-${width}.png`), fullPage: true, animations: 'disabled' });
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  await page.locator('.memory-card button').first().click();
+  await page.locator('#photo-full').evaluate(img => img.decode());
+  assert.match(await page.locator('#photo-count').textContent(), /^1 \/ 18/);
+  await page.keyboard.press('ArrowLeft');
+  assert.match(await page.locator('#photo-count').textContent(), /^18 \/ 18/);
+  await page.locator('#photo-next').click();
+  assert.match(await page.locator('#photo-count').textContent(), /^1 \/ 18/);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#photo-viewer').evaluate(dialog => dialog.open), false);
+  assert.equal(await page.locator('.memory-card button').first().evaluate(button => document.activeElement === button), true);
   await page.locator('#btn-goto-cake').click();
   await page.locator('#screen-cake.active').waitFor();
   await page.waitForFunction(() => document.querySelectorAll('.candle.lit').length === 3);
@@ -84,6 +118,26 @@ for (const width of [1280, 390]) test(`full birthday flow at ${width}px, exact m
   await page.locator('#short-reveal.show').waitFor();
   await page.locator('#btn-theme').click();
   assert.equal(await page.locator('html').getAttribute('data-theme'), 'sakura');
+});
+
+test('music starts, loops, respects pause, and retries blocked autoplay on a gesture', async t => {
+  const page = await setup(t);
+  assert.equal(await page.locator('#music-toggle').getAttribute('aria-pressed'), 'true');
+  assert.deepEqual(await page.evaluate(() => [__musicOptions.videoId, __musicOptions.playerVars.loop, __musicOptions.playerVars.playlist]), ['Whu6oBYdYvk', 1, 'Whu6oBYdYvk']);
+  await page.evaluate(() => __musicOptions.events.onStateChange({data:0}));
+  assert.deepEqual(await page.evaluate(() => __musicCalls.slice(-2)), ['seek:0', 'play']);
+  await page.locator('#music-toggle').click();
+  assert.equal(await page.locator('#music-toggle').getAttribute('aria-pressed'), 'false');
+  const count = await page.evaluate(() => __musicCalls.length);
+  await page.locator('#lock-input').dispatchEvent('pointerdown');
+  assert.equal(await page.evaluate(() => __musicCalls.length), count);
+  await page.locator('#music-toggle').click();
+  await page.evaluate(() => __musicOptions.events.onAutoplayBlocked());
+  assert.match(await page.locator('#music-status').textContent(), /แตะหน้าเว็บ/);
+  await page.locator('#lock-input').dispatchEvent('pointerdown');
+  assert.equal(await page.locator('#music-toggle').getAttribute('aria-pressed'), 'true');
+  await page.evaluate(() => __musicOptions.events.onError({data:150}));
+  assert.match(await page.locator('#music-status').textContent(), /เล่นเพลงไม่ได้/);
 });
 
 test('late comments preserve drafts and cannot replace history', async t => {
