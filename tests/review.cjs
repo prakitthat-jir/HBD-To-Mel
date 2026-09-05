@@ -101,9 +101,22 @@ for (const width of [1280, 390]) test(`full birthday flow at ${width}px, exact m
   await page.locator('#photo-full').evaluate(img => img.decode());
   assert.match(await page.locator('#photo-count').textContent(), /^1 \/ 18/);
   await page.keyboard.press('ArrowLeft');
+  await page.waitForFunction(() => document.querySelector('#photo-count').textContent.startsWith('18 /'));
   assert.match(await page.locator('#photo-count').textContent(), /^18 \/ 18/);
   await page.locator('#photo-next').click();
+  await page.waitForFunction(() => document.querySelector('#photo-count').textContent.startsWith('1 /'));
   assert.match(await page.locator('#photo-count').textContent(), /^1 \/ 18/);
+  // Drag the actual image; a short drag snaps back without changing the photo.
+  const bounds = await page.locator('#photo-full').boundingBox();
+  await page.mouse.move(bounds.x + bounds.width * .7, bounds.y + bounds.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(bounds.x + bounds.width * .2, bounds.y + bounds.height / 2, {steps: 8});
+  await page.mouse.up();
+  await page.waitForFunction(() => document.querySelector('#photo-count').textContent.startsWith('2 /'));
+  await page.locator('#photo-thumbnails button').nth(5).click();
+  await page.waitForFunction(() => document.querySelector('#photo-count').textContent.startsWith('6 /'));
+  assert.equal(await page.locator('#photo-thumbnails button[aria-current="true"]').count(), 1);
+  await page.screenshot({ path: path.join(__dirname, '..', 'test-results', `viewer-${width}.png`), animations: 'disabled' });
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#photo-viewer').evaluate(dialog => dialog.open), false);
   assert.equal(await page.locator('.memory-card button').first().evaluate(button => document.activeElement === button), true);
@@ -119,6 +132,48 @@ for (const width of [1280, 390]) test(`full birthday flow at ${width}px, exact m
   await page.locator('#short-reveal.show').waitFor();
   await page.locator('#btn-theme').click();
   assert.equal(await page.locator('html').getAttribute('data-theme'), 'sakura');
+});
+
+test('gallery rapid navigation ignores late photos and respects reduced motion', async t => {
+  const page = await setup(t);
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  await page.locator('#btn-goto-gallery').evaluate(button => button.click());
+  await page.locator('#screen-gallery.active').waitFor();
+  const delayed = [];
+  await page.route('**/m1-1440.webp', route => { delayed.push(route); });
+  await page.locator('.memory-card button').first().click();
+  await page.locator('#photo-next').evaluate(button => { button.click(); button.click(); });
+  await page.waitForFunction(() => document.querySelector('#photo-count').textContent.startsWith('3 /'));
+  assert.ok(delayed.length);
+  await Promise.all(delayed.map(route => route.fulfill({contentType: 'image/webp', body: fs.readFileSync(path.join(__dirname, '..', 'assets/photos/m1-1440.webp'))})));
+  await page.waitForTimeout(200);
+  assert.match(await page.locator('#photo-full').getAttribute('src'), /m2-1440/);
+  assert.equal(await page.locator('#photo-full').evaluate(img => img.getAnimations().length), 0);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('body').evaluate(body => body.style.overflow), '');
+});
+
+test('gallery touch swipes change photos without treating taps as swipes', async t => {
+  const page = await setup(t, {viewport: {width:390, height:844}});
+  const touch = await page.context().newCDPSession(page);
+  await touch.send('Emulation.setTouchEmulationEnabled', {enabled:true, maxTouchPoints:1});
+  await page.locator('#btn-goto-gallery').evaluate(button => button.click());
+  await page.locator('.memory-card button').first().click();
+  await page.locator('#photo-viewer').evaluate(dialog => Promise.all(dialog.getAnimations().map(a => a.finished)));
+  const rect = await page.locator('#photo-full').boundingBox();
+  const x = rect.x + rect.width * .75, y = rect.y + rect.height / 2;
+  async function swipe(distance) {
+    await touch.send('Input.dispatchTouchEvent', {type:'touchStart', touchPoints:[{x,y}]});
+    for (let i = 1; i <= 5; i++) await touch.send('Input.dispatchTouchEvent', {type:'touchMove', touchPoints:[{x:x-distance*i/5,y}]});
+    await touch.send('Input.dispatchTouchEvent', {type:'touchEnd', touchPoints:[]});
+  }
+  await swipe(130);
+  await page.waitForFunction(() => document.querySelector('#photo-count').textContent.startsWith('2 /'));
+  await page.locator('#photo-full').evaluate(img => Promise.all(img.getAnimations().map(a => a.finished)));
+  await swipe(8);
+  assert.match(await page.locator('#photo-count').textContent(), /^2 \/ 18/);
+  await page.locator('#photo-close').click();
+  assert.equal(await page.locator('#photo-viewer').evaluate(dialog => dialog.open), false);
 });
 
 test('background audio retries blocked autoplay, loops, and stays off after muting', async t => {

@@ -23,18 +23,75 @@
   const gallery = document.getElementById('memory-gallery');
   const viewer = document.getElementById('photo-viewer');
   const image = document.getElementById('photo-full');
-  let current = 0, opener = null, previousOverflow = '';
-  function show(index) {
-    current = (index + photos.length) % photos.length;
-    const [file, caption, alt] = photos[current];
+  const thumbnails = document.getElementById('photo-thumbnails');
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
+  const caption = document.getElementById('photo-caption');
+  const count = document.getElementById('photo-count');
+  count.setAttribute('aria-live', 'polite');
+  image.draggable = false;
+  let current = 0, opener = null, previousOverflow = '', revision = 0, drag = null;
+  let imageAnimation = null, dialogAnimation = null;
+  const thumbButtons = [];
+
+  function commitPhoto(index, direction) {
+    const [file, text, alt] = photos[index];
+    imageAnimation?.cancel();
+    image.style.transform = '';
     image.src = `assets/photos/${file}-1440.webp`;
     image.alt = alt;
-    document.getElementById('photo-caption').textContent = caption;
-    document.getElementById('photo-count').textContent = `${current + 1} / ${photos.length} · Our little memories`;
+    caption.textContent = text;
+    count.textContent = `${index + 1} / ${photos.length} · Our little memories`;
+    thumbButtons.forEach((button, i) => button.setAttribute('aria-current', String(i === index)));
+    const thumb = thumbButtons[index];
+    requestAnimationFrame(() => {
+      if (!viewer.open || current !== index) return;
+      thumbnails.scrollTo({left: thumb.offsetLeft - thumbnails.offsetLeft - thumbnails.clientWidth / 2 + thumb.offsetWidth / 2,
+        behavior: reducedMotion.matches ? 'instant' : 'smooth'});
+    });
+    if (!reducedMotion.matches && viewer.open) {
+      imageAnimation = image.animate([
+        {opacity: .35, transform: `translateX(${direction * 42}px) scale(.975)`},
+        {opacity: 1, transform: 'translateX(0) scale(1)'}
+      ], {duration: 360, easing: 'cubic-bezier(.22,1,.36,1)'});
+    }
+    // Cache just the two neighbours, so swiping does not wait for a blank image.
+    [-1, 1].forEach(step => { const next = new Image(); next.src = `assets/photos/${photos[(index + step + photos.length) % photos.length][0]}-1440.webp`; });
   }
-  photos.forEach(([file, caption, alt], index) => {
+
+  async function show(index, direction = 0) {
+    current = (index + photos.length) % photos.length;
+    const target = current;
+    const request = ++revision;
+    viewer.setAttribute('aria-busy', 'true');
+    if (viewer.open) {
+      const preload = new Image();
+      preload.src = `assets/photos/${photos[target][0]}-1440.webp`;
+      try { await preload.decode(); }
+      catch {
+        if (request === revision) { viewer.setAttribute('aria-busy', 'false'); caption.textContent = 'โหลดรูปไม่สำเร็จ ลองเลื่อนไปรูปอื่นก่อนนะ ♡'; }
+        return;
+      }
+    }
+    // Rapid navigation or closing the viewer invalidates older image requests.
+    if (request !== revision) return;
+    commitPhoto(target, direction);
+    viewer.setAttribute('aria-busy', 'false');
+  }
+
+  const revealObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      revealObserver.unobserve(entry.target);
+      if (!reducedMotion.matches) entry.target.animate([
+        {opacity: 0, translate: '0 30px'}, {opacity: 1, translate: '0 0'}
+      ], {duration: 650, delay: Number(entry.target.dataset.index) % 3 * 65, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards'});
+    });
+  }, {threshold: .12});
+
+  photos.forEach(([file, text, alt], index) => {
     const card = document.createElement('figure');
-    card.className = 'memory-card';
+    card.className = 'memory-card'; card.dataset.index = index;
     const button = document.createElement('button');
     button.type = 'button';
     button.setAttribute('aria-label', `ดูรูป ${index + 1}: ${alt}`);
@@ -46,23 +103,78 @@
     img.src = `assets/photos/${file}-640.webp`;
     img.srcset = `assets/photos/${file}-640.webp ${thumbWidth}w, assets/photos/${file}-1440.webp ${fullWidth}w`;
     img.sizes = '(max-width: 640px) 44vw, 300px';
-    img.alt = alt; img.loading = 'lazy'; img.decoding = 'async';
-    const cap = document.createElement('span'); cap.className = 'memory-caption'; cap.textContent = caption;
+    img.alt = alt; img.loading = 'lazy'; img.decoding = 'async'; img.draggable = false;
+    const cap = document.createElement('span'); cap.className = 'memory-caption'; cap.textContent = text;
     const number = document.createElement('span'); number.className = 'memory-number'; number.textContent = `MEMORY ${String(index + 1).padStart(2, '0')} / 18 ♡`;
     button.append(img, cap, number); card.append(button); gallery.append(card);
+    revealObserver.observe(card);
+
+    const thumb = document.createElement('button'); thumb.type = 'button';
+    thumb.setAttribute('aria-label', `ไปยังรูป ${index + 1}`);
+    const preview = document.createElement('img'); preview.src = `assets/photos/${file}-640.webp`; preview.alt = ''; preview.loading = 'lazy';
+    thumb.append(preview); thumbnails.append(thumb); thumbButtons.push(thumb);
+    thumb.addEventListener('click', () => show(index, index >= current ? 1 : -1));
+
+    let frame = 0;
+    card.addEventListener('pointermove', event => {
+      if (!finePointer.matches || reducedMotion.matches || event.pointerType === 'touch') return;
+      const rect = card.getBoundingClientRect();
+      const x = Math.max(-1, Math.min(1, (event.clientX - rect.left) / rect.width * 2 - 1));
+      const y = Math.max(-1, Math.min(1, (event.clientY - rect.top) / rect.height * 2 - 1));
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        card.style.setProperty('--tilt-x', `${-y * 4}deg`);
+        card.style.setProperty('--tilt-y', `${x * 4}deg`);
+      });
+    });
+    card.addEventListener('pointerleave', () => {
+      cancelAnimationFrame(frame);
+      card.style.removeProperty('--tilt-x'); card.style.removeProperty('--tilt-y');
+    });
     button.addEventListener('click', () => {
       opener = button; show(index); previousOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden'; viewer.showModal();
+      if (!reducedMotion.matches) dialogAnimation = viewer.animate([
+        {opacity: 0, transform: 'translateY(16px) scale(.96)'}, {opacity: 1, transform: 'translateY(0) scale(1)'}
+      ], {duration: 300, easing: 'cubic-bezier(.22,1,.36,1)'});
       document.getElementById('photo-close').focus();
     });
   });
+
+  image.addEventListener('pointerdown', event => {
+    if (!event.isPrimary || event.button !== 0) return;
+    imageAnimation?.cancel();
+    drag = {id: event.pointerId, x: event.clientX, y: event.clientY};
+    image.setPointerCapture(event.pointerId);
+  });
+  image.addEventListener('pointermove', event => {
+    if (!drag || drag.id !== event.pointerId || reducedMotion.matches) return;
+    const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
+    if (Math.abs(dx) > Math.abs(dy)) image.style.transform = `translateX(${Math.max(-100, Math.min(100, dx * .4))}px) rotate(${dx * .008}deg)`;
+  });
+  function finishDrag(event, cancelled = false) {
+    if (!drag || drag.id !== event.pointerId) return;
+    const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
+    drag = null;
+    const from = image.style.transform;
+    image.style.transform = '';
+    if (image.hasPointerCapture(event.pointerId)) image.releasePointerCapture(event.pointerId);
+    if (!cancelled && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.3) show(current + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1);
+    else if (from && !reducedMotion.matches) imageAnimation = image.animate([{transform: from}, {transform: 'none'}], {duration: 220, easing: 'ease-out'});
+  }
+  image.addEventListener('pointerup', event => finishDrag(event));
+  image.addEventListener('pointercancel', event => finishDrag(event, true));
+  image.addEventListener('lostpointercapture', () => { drag = null; image.style.transform = ''; });
   document.getElementById('photo-close').addEventListener('click', () => viewer.close());
-  document.getElementById('photo-prev').addEventListener('click', () => show(current - 1));
-  document.getElementById('photo-next').addEventListener('click', () => show(current + 1));
+  document.getElementById('photo-prev').addEventListener('click', () => show(current - 1, -1));
+  document.getElementById('photo-next').addEventListener('click', () => show(current + 1, 1));
   viewer.addEventListener('keydown', event => {
-    if (event.key === 'ArrowLeft') { event.preventDefault(); show(current - 1); }
-    if (event.key === 'ArrowRight') { event.preventDefault(); show(current + 1); }
+    if (event.key === 'ArrowLeft') { event.preventDefault(); show(current - 1, -1); }
+    if (event.key === 'ArrowRight') { event.preventDefault(); show(current + 1, 1); }
   });
   viewer.addEventListener('click', event => { if (event.target === viewer) { const r = viewer.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) viewer.close(); } });
-  viewer.addEventListener('close', () => { document.body.style.overflow = previousOverflow; opener?.focus(); });
+  viewer.addEventListener('close', () => {
+    revision++; drag = null; imageAnimation?.cancel(); dialogAnimation?.cancel(); image.style.transform = '';
+    viewer.setAttribute('aria-busy', 'false'); document.body.style.overflow = previousOverflow; opener?.focus();
+  });
 })();
