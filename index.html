@@ -1121,12 +1121,17 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   const memStore = {};
   let storageOK = true;
   function loadJSON(k, fallback) {
-    try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; }
+    if (Object.prototype.hasOwnProperty.call(memStore, k)) return memStore[k];
+    try {
+      const v = localStorage.getItem(k);
+      const parsed = v ? JSON.parse(v) : fallback;
+      return Array.isArray(fallback) && !Array.isArray(parsed) ? fallback : parsed;
+    }
     catch (e) { storageOK = false; return memStore[k] !== undefined ? memStore[k] : fallback; }
   }
   function saveJSON(k, v) {
     memStore[k] = v;
-    try { localStorage.setItem(k, JSON.stringify(v)); return true; }
+    try { localStorage.setItem(k, JSON.stringify(v)); delete memStore[k]; return true; }
     catch (e) { storageOK = false; return false; }
   }
   /* ---- ส่ง/ดึงคอมเมนต์จากที่เก็บกลาง (ดูวิธีตั้งค่าที่ TODO 7 ด้านบน) ---- */
@@ -1143,17 +1148,19 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   // คืนค่า "ok" = ยืนยันแล้วว่าถึงปลายทาง | "unverified" = ส่งออกไปแล้วแต่อ่านผลไม่ได้ | "fail" = ยังไม่ถึง
   async function remotePost(c) {
     if (!remoteOn()) return "fail";
+    if (navigator.onLine === false) return "fail";
     try {
       // ไม่ใส่ header เพื่อให้เป็น simple request (เลี่ยง CORS preflight ของ Apps Script)
       const res = await fetch(REMOTE.url, { method: "POST", body: JSON.stringify(c) });
       if (!res.ok) return "fail";          // ไม่ 2xx = ยังไม่ถึงปลายทาง
       // ปลายทางที่ถูกต้องต้องตอบกลับเป็น JSON ({ok:true})
       // ถ้าได้ HTML กลับมา แปลว่า url ชี้ผิดที่ (เช่นชี้มาที่เว็บตัวเอง) — อย่าบอกว่าส่งสำเร็จ
-      try { JSON.parse(await res.text()); return "ok"; } catch (bad) { return "fail"; }
+      try { const data = JSON.parse(await res.text()); return data && data.ok === true ? "ok" : "fail"; }
+      catch (bad) { return "fail"; }
     } catch (e) {
-      // ติด CORS/เน็ตมีปัญหา — ลองแบบ no-cors (เขียนได้ แต่อ่านผลกลับไม่ได้)
-      try { await fetch(REMOTE.url, { method: "POST", mode: "no-cors", body: JSON.stringify(c) }); return "unverified"; }
-      catch (e2) { return "fail"; }
+      // CORS อาจบล็อกเฉพาะผลตอบกลับทั้งที่บันทึกแล้ว จึงห้าม POST ซ้ำทันที
+      // ปลายทางต้องรองรับ idempotency ก่อน จึงจะ retry กรณีนี้ได้โดยไม่สร้างข้อมูลซ้ำ
+      return "unverified";
     }
   }
 
@@ -1187,15 +1194,24 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   }
 
   // ส่งซ้ำอันที่ค้างอยู่ (เช่นตอนเน็ตหลุด)
+  let flushingOutbox = false;
   async function flushOutbox() {
-    if (!remoteOn()) return;
-    const box = loadJSON(KEY.outbox, []);
-    if (!box.length) return;
-    const left = [];
-    for (const c of box) { if ((await remotePost(c)) === "fail") left.push(c); }
-    saveJSON(KEY.outbox, left);
+    if (!remoteOn() || flushingOutbox) return;
+    flushingOutbox = true;
+    try {
+      const box = loadJSON(KEY.outbox, []).slice();
+      for (const c of box) {
+        if ((await remotePost(c)) === "fail") continue;
+        // อ่านคิวล่าสุดเพื่อไม่ลบรายการใหม่ที่เพิ่มระหว่างรอเครือข่าย
+        const latest = loadJSON(KEY.outbox, []).slice();
+        const index = latest.findIndex((item) => JSON.stringify(item) === JSON.stringify(c));
+        if (index >= 0) latest.splice(index, 1);
+        saveJSON(KEY.outbox, latest);
+      }
+    } finally { flushingOutbox = false; }
   }
   setTimeout(flushOutbox, 2500);
+  addEventListener("online", flushOutbox);
 
   const thaiDate = (iso) => {
     try {
@@ -1539,7 +1555,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     let gotPoint =
       q.allRight ? true                                   // ข้อ 7 ตอบข้อไหนก็ถูก
       : q.type === "single" ? state.selected[0] === correctKeys[0]
-      : correctKeys.some((k) => state.selected.includes(k));
+      : state.selected.length === correctKeys.length && correctKeys.every((k) => state.selected.includes(k));
     if (q.freebie) gotPoint = true;          // ข้อ 1 แกล้งเล่น — แถมคะแนนให้
 
     if (gotPoint) state.score += 1;
@@ -1693,7 +1709,9 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   }
 
   $("btn-next").addEventListener("click", () => {
-    if (state.qIndex >= QUIZ.length) return;
+    if (!state.answered || $("btn-next").classList.contains("hidden") || state.qIndex >= QUIZ.length) return;
+    state.answered = false;
+    $("btn-next").classList.add("hidden");
     state.qIndex += 1;
     $("quiz-text-input").removeAttribute("readonly");
     if (state.qIndex >= QUIZ.length) { goToResult(); return; }
@@ -1735,8 +1753,8 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     QUIZ.forEach((q, i) => {
       if (q.type !== "text" || !state.textAnswers[i]) return;
       const d = el("div", "quote px-4 py-3");
-      d.innerHTML = `<p class="text-xs mb-1" style="color:var(--muted)">${q.question}</p>
-                     <p class="font-cute">“${state.textAnswers[i]}”</p>`;
+      d.innerHTML = `<p class="text-xs mb-1" style="color:var(--muted)">${esc(q.question)}</p>
+                     <p class="font-cute">“${esc(state.textAnswers[i])}”</p>`;
       box.appendChild(d);
     });
 
@@ -1758,7 +1776,10 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   }
 
   $("btn-goto-gallery").addEventListener("click", () => showScreen("screen-gallery", "gallery"));
+  let cakeStarted = false;
   $("btn-goto-cake").addEventListener("click", () => {
+    if (cakeStarted) return;
+    cakeStarted = true;
     showScreen("screen-cake", "cake");
     setTimeout(enterCakeScene, 260);          // ปิดไฟ + จุดเทียนหลังหน้าเปลี่ยนเสร็จ
   });
@@ -1885,13 +1906,15 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   /* ========================================================================
      แผ่นข้อมูล: ประวัติการตอบ / คอมเมนต์ถึงผู้สร้าง
      ======================================================================== */
+  let sheetVersion = 0;
   function openSheet(title, html) {
+    sheetVersion += 1;
     $("sheet-title").textContent = title;
     $("sheet-body").innerHTML = html;
     $("sheet").classList.remove("hidden");
     sfx("tap");
   }
-  function closeSheet() { $("sheet").classList.add("hidden"); }
+  function closeSheet() { sheetVersion += 1; $("sheet").classList.add("hidden"); }
   $("sheet-close").addEventListener("click", closeSheet);
   $("sheet").querySelector(".sheet-backdrop").addEventListener("click", closeSheet);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); });
@@ -1938,6 +1961,9 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   const rememberName = (n) => { try { localStorage.setItem("hbd-mel-name", n); } catch (e) { memStore.name = n; } };
 
   async function renderComments(flash) {
+    let version;
+    let sending = false;
+    const isCurrent = () => version === sheetVersion && !$("sheet").classList.contains("hidden");
     const local = loadJSON(KEY.comments, []);
     const pending = loadJSON(KEY.outbox, []).length;
 
@@ -1953,8 +1979,8 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 
       openSheet("💬 คอมเมนต์ถึงผลงานของผู้สร้าง", `
         <p class="text-sm font-cute mb-3" style="color:var(--muted)">อยากบอกอะไรคนทำเว็บนี้บ้าง? เขียนไว้ได้เลย (ลบไม่ได้นะ เก็บไว้ตลอด 😆)</p>
-        <input id="cmt-name" class="field font-cute mb-2" placeholder="ชื่อของคุณ (ไม่ใส่ก็ได้)" value="${esc(lastName())}" />
-        <textarea id="cmt-input" rows="3" class="field font-cute resize-none" placeholder="พิมพ์คอมเมนต์ที่นี่…"></textarea>
+        <input id="cmt-name" maxlength="60" class="field font-cute mb-2" placeholder="ชื่อของคุณ (ไม่ใส่ก็ได้)" value="${esc(lastName())}" />
+        <textarea id="cmt-input" maxlength="500" rows="3" class="field font-cute resize-none" placeholder="พิมพ์คอมเมนต์ที่นี่…"></textarea>
         <button id="cmt-send" class="btn btn-primary w-full mt-3">ส่งคอมเมนต์ 🚀</button>
         ${flash ? `<p class="text-sm text-center mt-3" style="color:var(--ok)">${esc(flash)}</p>` : ""}
         <p class="text-xs mt-5 mb-2" style="color:var(--muted)">
@@ -1967,10 +1993,16 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
             ? `<p class="text-xs text-center mt-4" style="color:var(--muted)">☁️ คอมเมนต์ถูกส่งไปหาผู้สร้างด้วย</p>`
             : storeNote()}
       `);
+      version = sheetVersion;
 
       $("cmt-send").addEventListener("click", async () => {
+        if (sending) return;
         const val = $("cmt-input").value.trim();
         if (!val) { toast("พิมพ์อะไรสักหน่อยน้า ✍️"); $("cmt-input").focus(); return; }
+        sending = true;
+        $("cmt-send").disabled = true;
+        $("cmt-name").disabled = true;
+        $("cmt-input").disabled = true;
         const name = $("cmt-name").value.trim().slice(0, 60);
         rememberName(name);
         const entry = { at: new Date().toISOString(), name, text: val.slice(0, 500) };
@@ -1984,6 +2016,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
         if (remoteOn()) {
           const sent = await remotePost(entry);
           if (sent === "fail") { const box = loadJSON(KEY.outbox, []); box.push(entry); saveJSON(KEY.outbox, box); }
+          if (!isCurrent()) return;
           renderComments(
             sent === "ok" ? "ส่งถึงผู้สร้างแล้ว ขอบคุณน้า 💗"
             : sent === "unverified" ? "ส่งออกไปแล้ว (ยืนยันผลไม่ได้ 100%) เก็บสำเนาไว้ในเครื่องด้วยแล้ว 💾"
@@ -1999,14 +2032,20 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     // ถ้าตั้งที่เก็บกลางไว้ ค่อยดึงของทุกคนมารวมทีหลัง (ไม่ให้หน้าค้างรอ)
     if (remoteOn() && REMOTE.showOthers) {
       const remote = await remoteList();
-      if (remote && !$("sheet").classList.contains("hidden")) {
+      if (isCurrent() && !sending) {
         const seen = new Set();
-        const merged = [...remote, ...local]
+        const merged = [...(remote || []), ...local]
           .filter((c) => { const k = (c.name || "") + "|" + c.text; if (seen.has(k)) return false; seen.add(k); return true; })
           .sort((a, b) => new Date(b.at) - new Date(a.at));
         const draft = $("cmt-input") ? $("cmt-input").value : "";   // ไม่ให้ข้อความที่กำลังพิมพ์หาย
+        const draftName = $("cmt-name").value;
+        const focused = document.activeElement;
+        const focusId = focused && ["cmt-name", "cmt-input"].includes(focused.id) ? focused.id : null;
+        const selection = focusId ? [focused.selectionStart, focused.selectionEnd] : null;
         draw(merged, false);
-        if (draft && $("cmt-input")) $("cmt-input").value = draft;
+        $("cmt-input").value = draft;
+        $("cmt-name").value = draftName;
+        if (focusId) { $(focusId).focus(); $(focusId).setSelectionRange(...selection); }
       }
     }
   }

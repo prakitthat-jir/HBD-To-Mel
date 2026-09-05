@@ -1,0 +1,6 @@
+{
+  "name": "hbd-to-mel",
+  "private": true,
+  "scripts": { "test": "node --test tests/review.cjs" },
+  "devDependencies": { "playwright": "1.63.0" }
+}
