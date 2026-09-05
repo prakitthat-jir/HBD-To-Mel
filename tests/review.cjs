@@ -12,7 +12,7 @@ before(async () => {
     const requested = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
     const file = path.resolve(root, requested === '/' ? 'index.html' : `.${requested}`);
     if (!file.startsWith(root + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) { res.writeHead(404).end(); return; }
-    const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.webp': 'image/webp' };
+    const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.webp': 'image/webp', '.mp3': 'audio/mpeg' };
     res.setHeader('Content-Type', mime[path.extname(file)] || 'application/octet-stream');
     res.end(fs.readFileSync(file));
   });
@@ -35,7 +35,7 @@ async function setup(t, options = {}) {
   wav.writeUInt32LE(8000, 24); wav.writeUInt32LE(16000, 28);
   wav.writeUInt16LE(2, 32); wav.writeUInt16LE(16, 34);
   wav.write('data', 36); wav.writeUInt32LE(8000, 40);
-  await page.route('**/music.mp3', route => options.noMusic
+  if (!options.realMusic) await page.route('**/music.mp3', route => options.noMusic
     ? route.fulfill({status:404, body:''})
     : route.fulfill({contentType:'audio/wav', body:wav}));
   // Every Apps Script request is intercepted; tests never write to the real sheet.
@@ -155,6 +155,28 @@ test('missing audio does not block the birthday experience', async t => {
   await page.locator('#btn-start').click();
   await page.locator('#screen-quiz.active').waitFor();
   assert.equal(await page.locator('#btn-music').getAttribute('aria-pressed'), 'false');
+});
+
+test('real music file plays, loops at the end, and can be turned off', async t => {
+  const page = await setup(t, { realMusic: true });
+  await page.waitForFunction(() => document.querySelector('#btn-music').dataset.state === 'playing');
+  const media = await page.locator('#bgm').evaluate(audio => ({
+    duration: audio.duration, loop: audio.loop, volume: audio.volume, error: audio.error
+  }));
+  assert.ok(Number.isFinite(media.duration) && media.duration > 0);
+  assert.equal(media.loop, true);
+  assert.equal(media.volume, 0.22);
+  assert.equal(media.error, null);
+  await page.locator('#bgm').evaluate(audio => { audio.currentTime = audio.duration - 0.15; });
+  await page.waitForFunction(() => {
+    const audio = document.querySelector('#bgm');
+    return audio.currentTime < 2 && !audio.paused;
+  });
+  await page.locator('#btn-music').click();
+  assert.equal(await page.locator('#bgm').evaluate(audio => audio.paused), true);
+  await page.locator('#btn-start').click();
+  assert.equal(await page.locator('#bgm').evaluate(audio => audio.paused), true);
+  assert.equal(await page.locator('.music-card, iframe').count(), 0);
 });
 
 test('late comments preserve drafts and cannot replace history', async t => {
