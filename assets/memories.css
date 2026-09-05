@@ -1,13 +1,5 @@
-.music-card{width:calc(100% - 36px);max-width:740px;margin:88px auto 0;display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:center;padding:20px;background:rgba(255,255,255,.88);border:1px solid var(--line);border-radius:26px;box-shadow:var(--shadow-sm)}
-.music-kicker{font-size:9px;letter-spacing:1.8px;color:var(--muted)}
-.music-title{font-family:'Itim',cursive;font-size:27px;margin:7px 0 2px;color:var(--primary-dark)}
-.music-artist{font-size:12px;color:var(--muted)}
-#music-status{font-size:11px;margin:12px 0 8px;color:var(--muted)}
-.music-toggle{border:1px solid var(--line);background:var(--primary-soft);color:var(--primary-dark);border-radius:99px;padding:8px 15px;font-size:12px;cursor:pointer}
-.music-copy>a{display:block;font-size:10px;margin-top:10px;text-decoration:underline;color:var(--muted)}
-.music-video{height:200px;border-radius:14px;overflow:hidden;background:#23191c}
-.music-video iframe,.music-video>div{width:100%;height:200px;border:0;display:block}
-.screen{padding-top:2.5rem;min-height:calc(100dvh - 320px)}
+#toolbar:not(.show){opacity:1;transform:none;pointer-events:auto}
+#toolbar:not(.show) .tool:not(#btn-music){display:none}
 #screen-gallery>.wrap{max-width:940px}
 .album-intro{position:relative;max-width:600px;margin:0 auto 25px;padding:27px 70px 27px 28px;text-align:left;background:#fffdf4;border:1px solid #f2e6cf;border-radius:4px 22px 22px 4px;box-shadow:0 8px 24px #7c39400a;transform:rotate(-1deg)}
 .album-intro>.font-script{font-size:30px;color:var(--primary)}
@@ -35,5 +27,5 @@
 .viewer-controls span{font-family:'Itim',cursive;color:var(--muted)}
 #photo-viewer button{border:1px solid var(--line);background:var(--primary-soft);border-radius:50%;width:42px;height:42px;color:var(--primary-dark);cursor:pointer;flex-shrink:0}
 button:focus-visible,a:focus-visible{outline:3px solid var(--primary);outline-offset:4px}
-@media(max-width:640px){.music-card{grid-template-columns:1fr;gap:14px;max-width:390px;padding:16px;margin-top:80px}.music-copy{position:relative;padding-right:0}.music-title{font-size:24px}.music-kicker{font-size:8px}.music-toggle{position:absolute;right:0;top:27px}.music-title,.music-artist{padding-right:100px}.music-copy>a{margin-top:5px}.music-video{height:200px}.memory-grid{columns:2;column-gap:16px;padding:12px 5px}.memory-card{padding:7px 7px 0;margin-bottom:24px}.memory-caption{font-size:15px;padding:11px 2px 4px}.memory-number{font-size:8px;letter-spacing:1px}.album-intro{padding:24px 60px 24px 20px}.album-intro p{font-size:16px}.album-sticker{right:-3px;width:68px;height:68px;font-size:13px}.album-ending{font-size:17px}#photo-caption{font-size:19px}}
+@media(max-width:640px){.memory-grid{columns:2;column-gap:16px;padding:12px 5px}.memory-card{padding:7px 7px 0;margin-bottom:24px}.memory-caption{font-size:15px;padding:11px 2px 4px}.memory-number{font-size:8px;letter-spacing:1px}.album-intro{padding:24px 60px 24px 20px}.album-intro p{font-size:16px}.album-sticker{right:-3px;width:68px;height:68px;font-size:13px}.album-ending{font-size:17px}#photo-caption{font-size:19px}}
 @media(prefers-reduced-motion:reduce){.memory-card{transition:none}}

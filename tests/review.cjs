@@ -28,22 +28,23 @@ async function setup(t, options = {}) {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   t.after(() => assert.deepEqual(errors, [], 'no uncaught browser errors'));
-  await page.route('https://www.youtube.com/iframe_api', route => route.fulfill({ contentType: 'text/javascript', body: `
-    window.YT = { PlayerState: { PLAYING:1, PAUSED:2, ENDED:0 }, Player: function(id, options) {
-      window.__musicOptions = options; window.__musicCalls = [];
-      this.playVideo = () => { window.__musicCalls.push('play'); options.events.onStateChange({data:1}); };
-      this.pauseVideo = () => { window.__musicCalls.push('pause'); options.events.onStateChange({data:2}); };
-      this.seekTo = time => window.__musicCalls.push('seek:' + time);
-      this.setVolume = () => {};
-      setTimeout(() => options.events.onReady({target:this}), 0);
-    }}; window.onYouTubeIframeAPIReady();
-  ` }));
+  // A silent WAV fixture exercises native audio without distributing the song.
+  const wav = Buffer.alloc(44 + 8000);
+  wav.write('RIFF'); wav.writeUInt32LE(wav.length - 8, 4); wav.write('WAVEfmt ', 8);
+  wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22);
+  wav.writeUInt32LE(8000, 24); wav.writeUInt32LE(16000, 28);
+  wav.writeUInt16LE(2, 32); wav.writeUInt16LE(16, 34);
+  wav.write('data', 36); wav.writeUInt32LE(8000, 40);
+  await page.route('**/music.mp3', route => options.noMusic
+    ? route.fulfill({status:404, body:''})
+    : route.fulfill({contentType:'audio/wav', body:wav}));
   // Every Apps Script request is intercepted; tests never write to the real sheet.
   await page.route('https://script.google.com/**', options.remote || (route => route.fulfill({
     contentType: 'application/json', body: route.request().method() === 'POST' ? '{"ok":true}' : '[]'
   })));
   if (options.init) await page.addInitScript(options.init);
   await page.goto(origin);
+  if (options.beforeUnlock) await options.beforeUnlock(page);
   await page.locator('#lock-input').fill('wrong');
   await page.locator('#btn-unlock').click();
   assert.match(await page.locator('#lock-error').textContent(), /รหัสไม่ถูก/);
@@ -120,24 +121,40 @@ for (const width of [1280, 390]) test(`full birthday flow at ${width}px, exact m
   assert.equal(await page.locator('html').getAttribute('data-theme'), 'sakura');
 });
 
-test('music starts, loops, respects pause, and retries blocked autoplay on a gesture', async t => {
-  const page = await setup(t);
-  assert.equal(await page.locator('#music-toggle').getAttribute('aria-pressed'), 'true');
-  assert.deepEqual(await page.evaluate(() => [__musicOptions.videoId, __musicOptions.playerVars.loop, __musicOptions.playerVars.playlist]), ['Whu6oBYdYvk', 1, 'Whu6oBYdYvk']);
-  await page.evaluate(() => __musicOptions.events.onStateChange({data:0}));
-  assert.deepEqual(await page.evaluate(() => __musicCalls.slice(-2)), ['seek:0', 'play']);
-  await page.locator('#music-toggle').click();
-  assert.equal(await page.locator('#music-toggle').getAttribute('aria-pressed'), 'false');
-  const count = await page.evaluate(() => __musicCalls.length);
-  await page.locator('#lock-input').dispatchEvent('pointerdown');
-  assert.equal(await page.evaluate(() => __musicCalls.length), count);
-  await page.locator('#music-toggle').click();
-  await page.evaluate(() => __musicOptions.events.onAutoplayBlocked());
-  assert.match(await page.locator('#music-status').textContent(), /แตะหน้าเว็บ/);
-  await page.locator('#lock-input').dispatchEvent('pointerdown');
-  assert.equal(await page.locator('#music-toggle').getAttribute('aria-pressed'), 'true');
-  await page.evaluate(() => __musicOptions.events.onError({data:150}));
-  assert.match(await page.locator('#music-status').textContent(), /เล่นเพลงไม่ได้/);
+test('background audio retries blocked autoplay, loops, and stays off after muting', async t => {
+  const page = await setup(t, {
+    init: () => {
+      const original = HTMLMediaElement.prototype.play;
+      let first = true;
+      HTMLMediaElement.prototype.play = function() {
+        if (first) { first = false; return Promise.reject(new DOMException('Blocked', 'NotAllowedError')); }
+        return original.call(this);
+      };
+    },
+    beforeUnlock: async page => {
+      await page.waitForFunction(() => document.querySelector('#btn-music').dataset.state === 'blocked');
+      assert.equal(await page.locator('#btn-music').isVisible(), true);
+      assert.equal(await page.locator('.music-card, #youtube-player, #music-toggle').count(), 0);
+    }
+  });
+  await page.waitForFunction(() => document.querySelector('#btn-music').dataset.state === 'playing');
+  assert.deepEqual(await page.locator('#bgm').evaluate(a => [a.loop, a.volume, a.controls]), [true, 0.22, false]);
+  await page.locator('#bgm').evaluate(a => { window.__loops = 0; a.addEventListener('playing', () => window.__loops++); a.currentTime = a.duration - 0.05; });
+  await page.waitForFunction(() => window.__loops > 0);
+  await page.locator('#btn-music').click();
+  assert.equal(await page.locator('#bgm').evaluate(a => a.paused), true);
+  await page.locator('#btn-start').click();
+  assert.equal(await page.locator('#bgm').evaluate(a => a.paused), true);
+  await page.locator('#btn-music').click();
+  await page.waitForFunction(() => !document.querySelector('#bgm').paused);
+});
+
+test('missing audio does not block the birthday experience', async t => {
+  const page = await setup(t, { noMusic: true });
+  await page.waitForFunction(() => document.querySelector('#btn-music').dataset.state === 'unavailable');
+  await page.locator('#btn-start').click();
+  await page.locator('#screen-quiz.active').waitFor();
+  assert.equal(await page.locator('#btn-music').getAttribute('aria-pressed'), 'false');
 });
 
 test('late comments preserve drafts and cannot replace history', async t => {

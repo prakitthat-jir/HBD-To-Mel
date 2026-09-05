@@ -10,7 +10,7 @@
     1. รหัสผ่านหน้าล็อก   -> CONFIG.password ในสคริปต์ด้านล่าง
     2. รูปภาพความทรงจำ    -> assets/photos/ (18 รูป พร้อมขนาดสำหรับมือถือ)
     3. แคปชั่นใต้รูป       -> assets/memories.js
-    4. เพลงประกอบ         -> assets/music.js (YouTube MV ทางการ)
+    4. เพลงประกอบ         -> music.mp3 + assets/music.js
     5. คำอวยพรสุ่ม        -> ตัวแปร WISH_POOL
     6. คำอวยพรหลัก        -> ตัวแปร MAIN_WISH / SHORT_WISH
     7. คอมเมนต์ข้ามเครื่อง -> ตัวแปร REMOTE (มีคู่มือตั้งค่าเขียนไว้ตรงนั้นครบ)
@@ -608,17 +608,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   <button id="btn-wish"  class="tool" title="สุ่มคำอวยพร" aria-label="สุ่มคำอวยพร">🎁</button>
 </div>
 
-<aside class="music-card" aria-label="เพลงประกอบวันเกิด">
-  <div class="music-copy">
-    <span class="music-kicker">A LITTLE SOUNDTRACK FOR YOU ♫</span>
-    <p class="music-title">ยินดีที่ไม่รู้จัก</p>
-    <p class="music-artist">25hours · เพลงของวันนี้ 💗</p>
-    <p id="music-status" role="status">กำลังเตรียมเพลง…</p>
-    <button id="music-toggle" class="music-toggle" type="button" aria-pressed="false">▶ เล่นเพลง</button>
-    <a href="https://www.youtube.com/watch?v=Whu6oBYdYvk" target="_blank" rel="noopener noreferrer">ดู MV ทางการบน YouTube ↗</a>
-  </div>
-  <div class="music-video"><div id="youtube-player"></div></div>
-</aside>
+<audio id="bgm" src="music.mp3" loop preload="auto"></audio>
 
 
 <!-- ==========================================================================
