@@ -551,6 +551,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 }
 </style>
 <link rel="stylesheet" href="assets/memories.css" />
+<link rel="stylesheet" href="assets/cake3d.css" />
 </head>
 <body class="antialiased">
 
@@ -778,9 +779,22 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 <section id="screen-cake" class="screen">
   <div class="wrap max-w-md text-center">
     <p class="chip mx-auto mb-3 cake-copy">Chapter 03</p>
-    <h2 id="cake-title" class="text-2xl md:text-3xl font-medium mb-1 cake-copy">หลับตา… ขอพร แล้วเป่าเทียนเลย! 🕯️</h2>
+    <h2 id="cake-title" class="text-2xl md:text-3xl font-medium mb-1 cake-copy">เค้กก้อนพิเศษ… สำหรับเมลคนเดียว</h2>
     <p id="cake-subtitle" class="text-sm mb-7 font-cute cake-copy" style="color:var(--muted)">ปิดไฟก่อนน้า… กำลังจุดเทียนให้อยู่ 🕯️</p>
 
+    <div id="cake-atelier" hidden>
+      <div class="cake-edition"><span>THE BIRTHDAY ATELIER</span><span>MADE FOR MEL · 01</span></div>
+      <div id="cake-viewport" tabindex="0" role="group" aria-label="เค้กสามมิติ ลากเพื่อหมุน ใช้ปุ่มลูกศรเปลี่ยนมุมมอง หรือแตะเทียนเพื่อเป่า"></div>
+      <div class="cake-signature"><span class="font-script">Strawberry Reverie</span><p>ครีมวานิลลา · สตรอว์เบอร์รี · ความปรารถนาดี</p></div>
+      <p class="cake-interaction-hint">ลากหมุนดูรอบๆ · แตะเทียนเพื่อขอพร</p>
+      <div class="cake-view-controls" aria-label="ปรับมุมมองเค้ก">
+        <button id="cake-rotate-left" type="button" aria-label="หมุนเค้กไปทางซ้าย">↶</button>
+        <button id="cake-auto" type="button" aria-pressed="true">Ⅱ หยุดหมุน</button>
+        <button id="cake-reset" type="button">มุมเริ่มต้น</button>
+        <button id="cake-rotate-right" type="button" aria-label="หมุนเค้กไปทางขวา">↷</button>
+      </div>
+      <label class="cake-zoom">− <input id="cake-zoom" type="range" min="0.85" max="1.3" value="1" step="0.01" aria-label="ซูมเค้ก" /> +</label>
+    </div>
     <div class="cake-stage mb-7">
       <div class="glow"></div>
 
@@ -2116,5 +2130,6 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 </dialog>
 <script src="assets/memories.js"></script>
 <script src="assets/music.js"></script>
+<script src="assets/cake-loader.js"></script>
 </body>
 </html>

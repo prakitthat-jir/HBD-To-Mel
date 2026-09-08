@@ -18,7 +18,7 @@ before(async () => {
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   origin = `http://127.0.0.1:${server.address().port}/`;
-  browser = await chromium.launch(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {});
+  browser = await chromium.launch({...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}), args:['--enable-unsafe-swiftshader']});
 });
 after(async () => { await browser?.close(); await new Promise(resolve => server?.close(resolve)); });
 
@@ -327,4 +327,74 @@ test('storage quota failure retains successive comments in memory', async t => {
     await page.waitForFunction(value => [...document.querySelectorAll('.cmt')].some(el => el.textContent.includes(value)), value);
   }
   assert.equal(await page.locator('.cmt').count(), 2);
+});
+
+for (const width of [1280,390]) test(`3D cake rotates, zooms and preserves candle flow at ${width}px`, async t => {
+  const page = await setup(t, {viewport:{width,height:950}});
+  await page.locator('#btn-goto-cake').evaluate(button => button.click());
+  await page.waitForFunction(() => document.querySelector('#screen-cake').dataset.renderer === 'webgl');
+  await page.waitForFunction(() => document.querySelector('#cake-viewport').dataset.lit === '3');
+  await page.locator('#cake-auto').click();
+  await page.locator('#cake-reset').click();
+  await page.waitForFunction(() => Math.abs(Number(document.querySelector('#cake-viewport').dataset.yaw)-.18)<.02);
+  const box=await page.locator('#cake-viewport').boundingBox();
+  await page.mouse.move(box.x+box.width*.7,box.y+box.height*.6);
+  await page.mouse.down();
+  await page.mouse.move(box.x+box.width*.3,box.y+box.height*.6,{steps:10});
+  await page.mouse.up();
+  await page.waitForFunction(() => Number(document.querySelector('#cake-viewport').dataset.yaw)<-.3);
+  assert.equal(await page.locator('#cake-auto').getAttribute('aria-pressed'),'false');
+  await page.locator('#cake-reset').click();
+  await page.waitForFunction(() => Math.abs(Number(document.querySelector('#cake-viewport').dataset.yaw)-.18)<.02);
+  await page.locator('#cake-zoom').fill('1.1');
+  await page.locator('#cake-zoom').dispatchEvent('input');
+  await page.waitForTimeout(300);
+  fs.mkdirSync(path.join(__dirname,'..','test-results'),{recursive:true});
+  await page.screenshot({path:path.join(__dirname,'..','test-results',`cake-3d-${width}.png`),fullPage:true});
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth<=innerWidth));
+  await page.locator('#cake-viewport').click({position:{x:box.width*.5,y:box.height*.31}});
+  await page.waitForFunction(() => document.querySelector('#cake-viewport').dataset.lit === '2');
+  await page.locator('#btn-blow').click();
+  await page.locator('#btn-blow').click();
+  await page.locator('#screen-letter.active').waitFor();
+  assert.equal(await page.locator('.candle.out').count(),3);
+});
+
+test('3D cake gracefully uses the original cake when WebGL is unavailable', async t => {
+  const page=await setup(t,{init:()=>{
+    const get=HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext=function(type,...args){if(type.startsWith('webgl'))return null;return get.call(this,type,...args);};
+  }});
+  await page.locator('#btn-goto-cake').evaluate(button=>button.click());
+  await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.renderer==='fallback');
+  assert.equal(await page.locator('.cake-stage').isVisible(),true);
+  await page.waitForFunction(()=>document.querySelectorAll('.candle.lit').length===3);
+  for(let i=0;i<3;i++)await page.locator('#btn-blow').click();
+  await page.locator('#screen-letter.active').waitFor();
+});
+
+test('3D cake supports touch rotation, reduced motion and context loss', async t => {
+  const page=await setup(t,{viewport:{width:390,height:950}});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.locator('#btn-goto-cake').evaluate(button=>button.click());
+  await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.renderer==='webgl');
+  await page.waitForFunction(()=>document.querySelector('#cake-viewport').dataset.lit==='3');
+  assert.equal(await page.locator('#cake-auto').getAttribute('aria-pressed'),'false');
+  const yaw=await page.locator('#cake-viewport').getAttribute('data-yaw');
+  await page.waitForTimeout(250);
+  assert.equal(await page.locator('#cake-viewport').getAttribute('data-yaw'),yaw);
+  const touch=await page.context().newCDPSession(page);
+  await touch.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
+  const r=await page.locator('#cake-viewport').boundingBox();
+  const x=r.x+r.width*.7,y=r.y+r.height*.6;
+  await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
+  for(let i=1;i<=5;i++)await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x-i*24,y}]});
+  await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await page.waitForFunction(()=>Number(document.querySelector('#cake-viewport').dataset.yaw)<-.5);
+  assert.equal(await page.locator('.candle.out').count(),0);
+  await page.locator('#cake-viewport canvas').evaluate(canvas=>canvas.getContext('webgl2').getExtension('WEBGL_lose_context').loseContext());
+  await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.renderer==='fallback');
+  assert.equal(await page.locator('.cake-stage').isVisible(),true);
+  await page.locator('#btn-blow').click();
+  assert.equal(await page.locator('.candle.out').count(),1);
 });

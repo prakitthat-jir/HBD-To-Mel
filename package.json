@@ -1,6 +1,15 @@
 {
   "name": "hbd-to-mel",
   "private": true,
-  "scripts": { "test": "node --test tests/review.cjs" },
-  "devDependencies": { "playwright": "1.63.0" }
+  "scripts": {
+    "test": "node --test tests/review.cjs",
+    "build:cake": "esbuild src/cake3d.js --bundle --minify --format=iife --target=es2020 --outfile=assets/cake3d.bundle.js --legal-comments=eof"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "playwright": "1.63.0"
+  },
+  "dependencies": {
+    "three": "0.185.1"
+  }
 }
