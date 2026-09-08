@@ -778,15 +778,8 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
      ========================================================================== -->
 <section id="screen-cake" class="screen">
   <div class="wrap max-w-md text-center">
-    <p class="chip mx-auto mb-3 cake-copy">Chapter 03</p>
-    <h2 id="cake-title" class="text-2xl md:text-3xl font-medium mb-1 cake-copy">เค้กก้อนพิเศษ… สำหรับเมลคนเดียว</h2>
-    <p id="cake-subtitle" class="text-sm mb-7 font-cute cake-copy" style="color:var(--muted)">ปิดไฟก่อนน้า… กำลังจุดเทียนให้อยู่ 🕯️</p>
-
     <div id="cake-atelier" hidden>
-      <div class="cake-edition"><span>THE BIRTHDAY ATELIER</span><span>MADE FOR MEL · 01</span></div>
       <div id="cake-viewport" tabindex="0" role="group" aria-label="เค้กสามมิติ ลากเพื่อหมุน ใช้ปุ่มลูกศรเปลี่ยนมุมมอง หรือแตะเทียนเพื่อเป่า"></div>
-      <div class="cake-signature"><span class="font-script">Strawberry Reverie</span><p>ครีมวานิลลา · สตรอว์เบอร์รี · ความปรารถนาดี</p></div>
-      <p class="cake-interaction-hint">ลากหมุนดูรอบๆ · แตะเทียนเพื่อขอพร</p>
       <div class="cake-view-controls" aria-label="ปรับมุมมองเค้ก">
         <button id="cake-rotate-left" type="button" aria-label="หมุนเค้กไปทางซ้าย">↶</button>
         <button id="cake-auto" type="button" aria-pressed="true">Ⅱ หยุดหมุน</button>
@@ -1818,7 +1811,6 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
         sfx("tick");
       }, 1250 + i * 300);
     });
-    setTimeout(() => { $("cake-subtitle").textContent = "แตะที่เทียนทีละเล่ม หรือกดปุ่มเป่าด้านล่างก็ได้น้า"; }, 2250);
   }
 
   function puffAt(candle) {
@@ -1846,9 +1838,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 
     const left = $("candles-left");
     if (left) left.textContent = candlesLeft;
-    if (candlesLeft > 0) {
-      $("cake-subtitle").textContent = candlesLeft === 1 ? "อีกเล่มเดียวเองงง 🕯️" : "เก่งมาก! เป่าต่อเลย 💨";
-    } else {
+    if (candlesLeft === 0) {
       allCandlesOut();
     }
   }
@@ -1857,8 +1847,6 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 
   function allCandlesOut() {
     const scene = $("cake-scene");
-    $("cake-title").textContent = "ขอพรสำเร็จแล้ว ✨";
-    $("cake-subtitle").textContent = "มืดสนิทเลย… อธิษฐานในใจเบาๆ นะ 🤫";
     $("cake-hint").textContent = "";
     $("btn-blow").classList.add("hidden");
 
@@ -1867,7 +1855,6 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
       document.body.classList.remove("lights-off");
       $("flash").classList.remove("on"); void $("flash").offsetWidth; $("flash").classList.add("on");
       scene.classList.remove("squash", "cheer"); void scene.offsetWidth; scene.classList.add("cheer");
-      $("cake-title").textContent = "เปิดไฟ! Happy Birthday 🎉";
       $("cake-hint").textContent = "ขอให้พรที่ขอเป็นจริงทุกข้อเลยน้า 💗";
       rain(30);
       sfx("ok");
