@@ -39,3 +39,4 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--primary);outline-of
 @keyframes sticker-sway{0%,100%{transform:rotate(10deg) translateY(0)}50%{transform:rotate(15deg) translateY(-5px)}}
 @media(max-width:640px){.memory-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:25px 16px;padding:12px 5px 25px}.memory-card{padding:7px 7px 0}.memory-caption{font-size:15px;padding:11px 2px 4px}.memory-number{font-size:8px;letter-spacing:1px}.album-intro{padding:24px 60px 24px 20px}.album-intro p{font-size:16px}.album-sticker{right:-3px;width:68px;height:68px;font-size:13px}.album-ending{font-size:17px}#photo-caption{font-size:19px}}
 @media(prefers-reduced-motion:reduce){.memory-card,#photo-thumbnails button{transition:none}.album-sticker{animation:none}.memory-card{--tilt-x:0deg!important;--tilt-y:0deg!important;--lift:0px!important}}
+.memory-caption,#photo-caption{white-space:pre-wrap}
