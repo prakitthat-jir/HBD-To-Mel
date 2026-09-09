@@ -161,6 +161,18 @@
     });
   });
 
+  document.getElementById('btn-export-captions').addEventListener('click', () => {
+    // Include the current textarea values, including edits not yet saved, and key
+    // them by stable photo ID so an exported caption cannot drift to another photo.
+    const inputs = gallery.querySelectorAll('.caption-editor textarea');
+    const data = { version: 1, exportedAt: new Date().toISOString(), captions: Object.fromEntries(photos.map(([file, text], index) => [file, inputs[index]?.value ?? text])) };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob), link = document.createElement('a');
+    link.href = url; link.download = 'mel-latest-captions.json'; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    document.getElementById('caption-export-status').textContent = 'ดาวน์โหลดแล้ว ส่งไฟล์ mel-latest-captions.json ให้ผู้สร้างเพื่ออัปเดตข้อความถาวร';
+  });
+
   image.addEventListener('pointerdown', event => {
     if (!event.isPrimary || event.button !== 0) return;
     imageAnimation?.cancel();

@@ -549,6 +549,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   .screen{ padding: 6rem 1.5rem 7rem }
   .choice{ font-size:1rem }
 }
+.chapter-navigation{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:28px auto 0}.chapter-navigation .btn{font-size:12px;padding:10px 15px}.step{position:relative;cursor:pointer}.step small{position:absolute;right:1px;bottom:0;font-size:9px;background:var(--primary-soft);border-radius:8px;padding:0 3px}.step:focus-visible{outline:2px solid var(--primary);outline-offset:3px}.step:disabled{cursor:not-allowed}
 </style>
 <link rel="stylesheet" href="assets/memories.css" />
 <link rel="stylesheet" href="assets/cake-decorator.css" />
@@ -594,11 +595,11 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 
 <!-- ================= แถบขั้นตอน (บนสุด) ================= -->
 <nav id="stepbar" aria-label="ขั้นตอน">
-  <div class="step" data-step="landing" title="เริ่มต้น">🎉</div>
-  <div class="step" data-step="quiz" title="ควิซ">❓</div>
-  <div class="step" data-step="gallery" title="ความทรงจำ">📸</div>
-  <div class="step" data-step="cake" title="เค้ก">🎂</div>
-  <div class="step" data-step="letter" title="จดหมาย">💌</div>
+  <button type="button" class="step" data-step="landing" title="เริ่มต้น" aria-label="เริ่มต้น" disabled>🎉<small>เริ่ม</small></button>
+  <button type="button" class="step" data-step="quiz" title="Chapter 1 · ควิซ" aria-label="Chapter 1 · ควิซ" disabled>❓<small>1</small></button>
+  <button type="button" class="step" data-step="gallery" title="Chapter 2 · ความทรงจำ" aria-label="Chapter 2 · ความทรงจำ" disabled>📸<small>2</small></button>
+  <button type="button" class="step" data-step="cake" title="Chapter 3 · เค้ก" aria-label="Chapter 3 · เค้ก" disabled>🎂<small>3</small></button>
+  <button type="button" class="step" data-step="letter" title="Chapter 4 · จดหมาย" aria-label="Chapter 4 · จดหมาย" disabled>💌<small>4</small></button>
 </nav>
 
 <!-- ================= ปุ่มลอย ================= -->
@@ -740,7 +741,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
         <p class="text-xs mt-2" style="color:var(--muted)">แคปหน้าจอนี้ไว้เป็นหลักฐานเลยน้า 😆</p>
       </div>
 
-      <div id="result-answers" class="text-left space-y-3 mb-6"></div>
+      <p class="text-xs mb-4" style="color:var(--muted)">🔒 คำตอบถูกบันทึกแล้ว ดูย้อนหลังได้ แต่แก้ไขไม่ได้</p><div id="result-answers" class="text-left space-y-3 mb-6"></div>
 
       <button id="btn-goto-gallery" class="btn btn-primary w-full">ไปดูความทรงจำกัน 📸</button>
     </div>
@@ -760,7 +761,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 
     <div class="album-intro"><span class="font-script">Dear Mel,</span><p>นี่คือรูปของเธอวัย 24 ผ่านมุมมองของฉัน<br />ขอบคุณที่ผ่านเข้ามาในชีวิต เธอเติบโตขึ้นเยอะเลย (โตด้านข้าง)</p><span class="album-sticker" aria-hidden="true">made with<br />♡ & smiles</span></div>
     <p class="album-tip">เลื่อนดูรอยยิ้ม · แตะเปิดรูป · ปัดซ้าย–ขวาเพื่อดูต่อ ✨</p>
-    <div id="memory-gallery" class="memory-grid"></div>
+    <div id="memory-gallery" class="memory-grid"></div><div class="caption-export"><button id="btn-export-captions" class="btn btn-ghost" type="button">ดาวน์โหลดแคปชั่นล่าสุด 📥</button><p id="caption-export-status" class="text-xs mt-2" role="status" style="color:var(--muted)">ดาวน์โหลดไฟล์เพื่อส่งให้ผู้สร้างอัปเดตแคปชั่นถาวรบนเว็บไซต์</p></div>
     <p class="album-ending font-cute">รูปอาจหยุดเวลาไม่ได้… แต่เก็บรอยยิ้มไว้ได้เสมอ 💌</p>
 
     <button id="btn-goto-cake" class="btn btn-primary">ไปต่อ</button>
@@ -890,7 +891,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
             <button id="btn-comment" class="btn btn-ghost text-sm px-3">คอมเมนต์ผู้สร้าง 💬</button>
           </div>
 
-          <button id="btn-replay" class="btn btn-ghost w-full">เล่นใหม่อีกรอบ 🔄</button>
+          <button id="btn-replay" class="btn btn-ghost w-full">กลับไปหน้าเริ่มต้น ↩</button>
         </div>
       </div>
       <p class="text-center text-xs mt-5" style="color:var(--muted)">Made with 😎 by Pyopapaya</p>
@@ -1128,7 +1129,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
      เก็บใน localStorage ของเครื่อง — รีเฟรช/กดเล่นใหม่ก็ไม่หาย
      ถ้าเบราว์เซอร์ไม่ให้ใช้ จะ fallback เก็บในหน่วยความจำชั่วคราวแทน
      ------------------------------------------------------------------ */
-  const KEY = { history: "hbd-mel-history", comments: "hbd-mel-comments", outbox: "hbd-mel-outbox" };
+  const KEY = { progress: "hbd-mel-quiz-progress-v1", history: "hbd-mel-history", comments: "hbd-mel-comments", outbox: "hbd-mel-outbox" };
   const memStore = {};
   let storageOK = true;
   function loadJSON(k, fallback) {
@@ -1230,11 +1231,47 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     } catch (e) { return iso; }
   };
 
+  const chapterOrder = ["landing", "quiz", "gallery", "cake", "letter"];
+  const chapterScreens = { landing: "screen-landing", quiz: "screen-quiz", gallery: "screen-gallery", cake: "screen-cake", letter: "screen-letter" };
+  const visitedChapters = new Set(["landing"]);
+  let currentChapter = "landing", screenRevision = 0, quizStarted = false, quizCommitted = false;
+  const legacyQuiz = loadJSON(KEY.history, [])[0];
+  const savedProgress = loadJSON(KEY.progress, null) || (legacyQuiz && Array.isArray(legacyQuiz.items) ? { log: legacyQuiz.items, committed: true, visited: ["landing", "quiz", "gallery"] } : null);
+  if (savedProgress && Array.isArray(savedProgress.log) && savedProgress.log.length <= QUIZ.length && savedProgress.log.every((entry, i) => entry && entry.n === i + 1 && entry.q === QUIZ[i].question && typeof entry.picked === "string" && typeof entry.ok === "boolean")) {
+    state.log = savedProgress.log;
+    state.scorable = state.log.length; state.score = state.log.filter(entry => entry.ok).length;
+    state.textAnswers = Object.fromEntries(state.log.filter(entry => entry.type === "text").map(entry => [entry.n - 1, entry.picked]));
+    state.qIndex = state.log.length; quizCommitted = savedProgress.committed === true;
+    if (state.log.length) visitedChapters.add("quiz");
+    if (state.log.length === QUIZ.length && Array.isArray(savedProgress.visited)) savedProgress.visited.filter(name => chapterOrder.includes(name)).forEach(name => visitedChapters.add(name));
+  }
+  function saveQuizProgress() { saveJSON(KEY.progress, { log: state.log, committed: quizCommitted, visited: [...visitedChapters] }); }
+  function navigateChapter(name) {
+    if (!visitedChapters.has(name) || $("screen-lock").classList.contains("active")) return;
+    if (name === "quiz") {
+      if (state.log.length === QUIZ.length) { goToResult(); return; }
+      if (!quizStarted) { quizStarted = true; renderQuestion(); }
+    }
+    showScreen(chapterScreens[name], name);
+  }
+  document.querySelectorAll(".step").forEach(button => button.addEventListener("click", () => navigateChapter(button.dataset.step)));
+  document.querySelectorAll(".screen:not(#screen-lock) > .wrap").forEach(wrap => {
+    const nav = el("nav", "chapter-navigation"); nav.setAttribute("aria-label", "ย้อนกลับหรือไปต่อระหว่าง Chapter");
+    for (const [direction, label] of [[-1, "← Chapter ก่อนหน้า"], [1, "Chapter ถัดไป →"]]) {
+      const button = el("button", "btn btn-ghost"); button.type = "button"; button.dataset.chapterDirection = direction; button.textContent = label;
+      button.addEventListener("click", () => navigateChapter(chapterOrder[chapterOrder.indexOf(currentChapter) + direction])); nav.append(button);
+    }
+    wrap.append(nav);
+  });
+
   function showScreen(id, stepName) {
+    const revision = ++screenRevision;
     const cur = document.querySelector(".screen.active");
     const next = $(id);
-    if (!next || cur === next) return;
+    if (!next) return;
+    if (cur === next) { cur.classList.remove("leaving"); if (stepName) setStep(stepName); return; }
     const go = () => {
+      if (revision !== screenRevision) return;
       // ปิดทุกหน้าที่ยัง active อยู่ (กันกรณีสั่งเปลี่ยนหน้าซ้อนกัน แล้วเหลือ 2 หน้าค้าง)
       document.querySelectorAll(".screen.active").forEach((s) => s.classList.remove("active", "leaving"));
       next.classList.add("active");
@@ -1245,13 +1282,18 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   }
 
   function setStep(name) {
-    const order = ["landing", "quiz", "gallery", "cake", "letter"];
+    currentChapter = name; visitedChapters.add(name);
+    if (state.log.length) saveQuizProgress();
+    const order = chapterOrder;
     const at = order.indexOf(name);
     document.querySelectorAll(".step").forEach((s) => {
       const i = order.indexOf(s.dataset.step);
       s.classList.toggle("now", i === at);
-      s.classList.toggle("done", i < at);
+      s.classList.toggle("done", visitedChapters.has(s.dataset.step) && i !== at);
+      s.disabled = !visitedChapters.has(s.dataset.step);
+      if (i === at) s.setAttribute("aria-current", "step"); else s.removeAttribute("aria-current");
     });
+    document.querySelectorAll("[data-chapter-direction]").forEach(button => { const target = order[at + Number(button.dataset.chapterDirection)]; button.disabled = !target || !visitedChapters.has(target); });
   }
 
   function toast(msg) {
@@ -1412,8 +1454,9 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
      SCREEN 1 — หน้าแรก
      ======================================================================== */
   $("btn-start").addEventListener("click", () => {
+    if (state.log.length === QUIZ.length) { goToResult(); return; }
     showScreen("screen-quiz", "quiz");
-    renderQuestion();
+    if (!quizStarted) { quizStarted = true; renderQuestion(); }
   });
 
   /* ========================================================================
@@ -1542,7 +1585,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   }
 
   function onChoice(q, btn, choice) {
-    if (state.answered) return;
+    if (state.answered || state.log.some(entry => entry.n === state.qIndex + 1) || !$("screen-quiz").classList.contains("active")) return;
 
     if (q.type === "single") {
       state.selected = [choice.key];
@@ -1565,6 +1608,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   });
 
   function revealAnswer(q) {
+    if (state.log.some(entry => entry.n === state.qIndex + 1)) return;
     state.answered = true;
     state.scorable += 1;
 
@@ -1614,6 +1658,8 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
       answer: q.allRight ? "ตอบข้อไหนก็ถูก" : correctKeys.map(labelOf).join(", "),
       ok: gotPoint,
     });
+
+    saveQuizProgress();
 
     // กล่องเฉลย + เอฟเฟกต์ฉลอง ตามหลังการไล่เฉลย
     setTimeout(() => {
@@ -1694,7 +1740,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     $("quiz-text-count").textContent = e.target.value.trim().length;
   });
   $("btn-text-submit").addEventListener("click", () => {
-    if (state.answered) return;
+    if (state.answered || state.log.some(entry => entry.n === state.qIndex + 1) || !$("screen-quiz").classList.contains("active")) return;
     const q = QUIZ[state.qIndex];
     const val = $("quiz-text-input").value.trim();
     if (!val) { toast("พิมพ์อะไรสักหน่อยน้า ✍️"); $("quiz-text-input").focus(); return; }
@@ -1703,6 +1749,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     state.scorable += 1;
     state.score += 1;                        // ข้อปลายเปิด: เขียนมาก็ได้คะแนนเลย
     state.log.push({ n: state.qIndex + 1, q: q.question, picked: val, answer: "", ok: true, type: "text" });
+    saveQuizProgress();
     $("quiz-text-input").setAttribute("readonly", "readonly");
     $("quiz-reveal-title").textContent = "💌 บันทึกคำตอบแล้ว +1 คะแนน";
     $("quiz-reveal-text").textContent = q.note || "เก็บคำตอบนี้ไว้ให้แล้วน้า";
@@ -1722,7 +1769,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     const btn = $("btn-next");
     btn.classList.remove("hidden");
     btn.textContent = state.qIndex === QUIZ.length - 1 ? "ดูผลลัพธ์ 🏆" : "ข้อต่อไป ➡️";
-    setTimeout(() => btn.scrollIntoView({ behavior: "smooth", block: "nearest" }), 120);
+    setTimeout(() => { if ($("screen-quiz").classList.contains("active")) btn.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, 120);
   }
 
   $("btn-next").addEventListener("click", () => {
@@ -1743,6 +1790,8 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
      SCREEN 3 — สรุปผล
      ======================================================================== */
   function goToResult() {
+    if (state.log.length !== QUIZ.length) return;
+    const firstResult = !quizCommitted;
     const total = state.scorable || 1;
     const ratio = state.score / total;
 
@@ -1759,20 +1808,21 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     prize.classList.toggle("hidden", !state.prizeWon);
 
     // บันทึกประวัติการตอบรอบนี้ (เก็บไว้ 20 รอบล่าสุด)
+    if (firstResult) {
     const hist = loadJSON(KEY.history, []);
     hist.unshift({ at: new Date().toISOString(), score: state.score, total: state.scorable, prize: state.prizeWon, items: state.log.slice() });
     saveJSON(KEY.history, hist.slice(0, 20));
 
-    sendQuizToSheet();          // ส่งคำตอบทั้ง 10 ข้อขึ้น Google Sheet ด้วย
+    quizCommitted = true; saveQuizProgress();
+    sendQuizToSheet();          // ส่งเฉพาะเมื่อจบรอบครั้งแรก ไม่ส่งซ้ำเมื่อดูย้อนหลัง
+    }
 
     const box = $("result-answers");
     box.innerHTML = "";
-    QUIZ.forEach((q, i) => {
-      if (q.type !== "text" || !state.textAnswers[i]) return;
-      const d = el("div", "quote px-4 py-3");
-      d.innerHTML = `<p class="text-xs mb-1" style="color:var(--muted)">${esc(q.question)}</p>
-                     <p class="font-cute">“${esc(state.textAnswers[i])}”</p>`;
-      box.appendChild(d);
+    state.log.forEach(entry => {
+      const card = el("div", "quote px-4 py-3 quiz-saved-answer");
+      card.innerHTML = '<p class="text-xs mb-1">' + entry.n + '. ' + esc(entry.q) + '</p><p class="font-cute">คำตอบของเธอ: ' + esc(entry.picked) + '</p>' + (entry.type !== "text" ? '<p class="text-xs mt-2" style="color:var(--muted)">เฉลย: ' + esc(entry.answer || "") + ' · ' + (entry.ok ? '✓ ได้คะแนน' : 'ไม่ได้คะแนน') + '</p>' : '');
+      box.append(card);
     });
 
     showScreen("screen-result", "quiz");
@@ -1782,8 +1832,8 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     ring.style.strokeDasharray = C;
     ring.style.strokeDashoffset = C;
     setTimeout(() => { ring.style.strokeDashoffset = C * (1 - ratio); }, 420);
-    setTimeout(() => rain(26), 500);
-    if (state.prizeWon) {
+    if (firstResult) setTimeout(() => rain(26), 500);
+    if (state.prizeWon && firstResult) {
       setTimeout(() => {
         showStamp("ได้รางวัลพิเศษ! 🎁", true);
         sfx("ok"); rain(20);
@@ -1851,7 +1901,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); });
 
   const storeNote = () => storageOK
-    ? `<p class="text-xs text-center mt-4" style="color:var(--muted)">💾 ข้อมูลถูกเก็บไว้ในเครื่องนี้ · รีเฟรชหรือกดเล่นใหม่ก็ไม่หาย</p>`
+    ? `<p class="text-xs text-center mt-4" style="color:var(--muted)">💾 ข้อมูลถูกเก็บไว้ในเครื่องนี้ · รีเฟรชหรือย้อนกลับก็ไม่หาย</p>`
     : `<p class="text-xs text-center mt-4" style="color:var(--no)">⚠️ เบราว์เซอร์นี้ไม่ให้บันทึกลงเครื่อง ข้อมูลจะอยู่แค่จนกว่าจะปิดหน้านี้</p>`;
 
   $("btn-history").addEventListener("click", () => {
@@ -2018,7 +2068,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     burstFrom(e.currentTarget, FX.burst);
   });
 
-  $("btn-replay").addEventListener("click", () => location.reload());
+  $("btn-replay").addEventListener("click", () => navigateChapter("landing"));
 
   /* ========================================================================
      TOOLBAR — ธีม / เพลง / คำอวยพรสุ่ม

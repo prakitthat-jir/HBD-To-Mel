@@ -67,6 +67,7 @@ async function next(page) {
 
 for (const width of [1280, 390]) test(`full birthday flow at ${width}px, single-answer quiz and safe text`, async t => {
   const page = await setup(t, { viewport: { width, height: 900 } });
+  let quizPosts=0;page.on('request',request=>{if(request.url().startsWith('https://script.google.com/')&&request.method()==='POST'&&request.postDataJSON()?.type==='quiz')quizPosts++;});
   await page.locator('#btn-start').click();
   for (const answer of ['B', 'D', 'B', 'F', 'E', 'C', 'A']) {
     await page.locator(`#quiz-choices [data-key="${answer}"]`).click();
@@ -139,6 +140,15 @@ for (const width of [1280, 390]) test(`full birthday flow at ${width}px, single-
   await page.locator('#short-reveal.show').waitFor();
   await page.locator('#btn-theme').click();
   assert.equal(await page.locator('html').getAttribute('data-theme'), 'sakura');
+  await page.locator('#screen-letter [data-chapter-direction="-1"]').click();await page.locator('#screen-cake.active').waitFor();assert.equal(await page.locator('#screen-cake').getAttribute('data-phase'),'show');
+  await page.locator('#stepbar [data-step="quiz"]').click();await page.locator('#screen-result.active').waitFor();
+  assert.equal(await page.locator('.quiz-saved-answer').count(),10);assert.equal(await page.locator('#result-score').textContent(),'10/10');assert.equal(await page.locator('#quiz-text-input').isVisible(),false);
+  await page.locator('#stepbar [data-step="landing"]').click();await page.locator('#btn-start').click();await page.locator('#screen-result.active').waitFor();
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('hbd-mel-history')).length),1);
+  await page.locator('#stepbar [data-step="letter"]').click();await page.locator('#screen-letter.active').waitFor();await page.locator('#letter-content').waitFor({state:'visible'});
+  await page.reload();await page.locator('#lock-input').fill('23092001');await page.locator('#btn-unlock').click();await page.locator('#screen-landing.active').waitFor();
+  await page.locator('#stepbar [data-step="quiz"]').click();await page.locator('#screen-result.active').waitFor();
+  assert.equal(await page.locator('#result-score').textContent(),'10/10');assert.equal(await page.locator('.quiz-saved-answer').count(),10);assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('hbd-mel-history')).length),1);assert.equal(quizPosts,1,'review and refresh do not submit the quiz again');
 });
 
 test('gallery rapid navigation ignores late photos and respects reduced motion', async t => {
@@ -345,6 +355,9 @@ test('captions persist independently and render user text safely',async t=>{
   await page.reload();await page.locator('#btn-goto-gallery').evaluate(b=>b.click());await page.locator('#screen-gallery.active').waitFor();
   assert.equal(await cards.nth(0).locator('.memory-caption').textContent(),'<img src=x onerror=alert(1)>');assert.equal(await cards.nth(1).locator('.memory-caption').textContent(),'Another memory');assert.equal(await cards.locator('.memory-caption img').count(),0);
   await cards.nth(0).locator('button').first().click();assert.equal(await page.locator('#photo-caption').textContent(),'<img src=x onerror=alert(1)>');
+  await page.keyboard.press('Escape');await cards.nth(0).locator('summary').click();await cards.nth(0).locator('textarea').fill('แคปชั่นล่าสุดที่ยังไม่ได้กดบันทึก');
+  const download=page.waitForEvent('download');await page.locator('#btn-export-captions').click();const file=await download;assert.equal(file.suggestedFilename(),'mel-latest-captions.json');
+  const exported=JSON.parse(fs.readFileSync(await file.path(),'utf8'));assert.equal(Object.keys(exported.captions).length,18);assert.equal(exported.captions.m13,'แคปชั่นล่าสุดที่ยังไม่ได้กดบันทึก');assert.equal(exported.captions.m1,'Another memory');
 });
 
 for(const width of [1280,390])test(`3D cake studio placement, rotation, editing and export at ${width}px`,async t=>{
@@ -437,4 +450,15 @@ for(const width of [1280,390])test(`tier flavors, real-model catalog and individ
   await page.locator('#cake-back-edit').click();assert.equal(await canvas.getAttribute('data-items'),before);assert.equal(await canvas.getAttribute('data-lit'),'0');assert.deepEqual(JSON.parse(await canvas.getAttribute('data-tiers')),layers);
   await page.locator('#cake-clear').click();await page.locator('#cake-show').click();assert.equal(await page.locator('#cake-continue').isEnabled(),true);assert.match(await page.locator('#cake-candle-count').textContent(),/ไม่มีเทียน/);
   await page.locator('#cake-continue').click();await page.locator('#screen-letter.active').waitFor();
+});
+
+test('chapter navigation preserves locked answers and the current unanswered question',async t=>{
+  const page=await setup(t);assert.equal(await page.locator('#stepbar [data-step="cake"]').isDisabled(),true);
+  await page.locator('#btn-start').click();await page.locator('#quiz-choices [data-key="B"]').click();await page.locator('#btn-next').waitFor({state:'visible'});
+  await page.locator('#stepbar [data-step="landing"]').click();await page.locator('#screen-landing.active').waitFor();await page.locator('#btn-start').click();await page.locator('#screen-quiz.active').waitFor();
+  await page.locator('#quiz-choices [data-key="C"]').evaluate(b=>b.click());assert.match(await page.locator('#quiz-score-label').textContent(),/1 คะแนน/);
+  await next(page);assert.match(await page.locator('#quiz-progress-label').textContent(),/ข้อ 2/);
+  await page.locator('#stepbar [data-step="landing"]').click();await page.locator('#screen-landing.active').waitFor();await page.locator('#stepbar [data-step="quiz"]').click();await page.locator('#screen-quiz.active').waitFor();assert.match(await page.locator('#quiz-progress-label').textContent(),/ข้อ 2/);
+  await page.reload();await page.locator('#lock-input').fill('23092001');await page.locator('#btn-unlock').click();await page.locator('#screen-landing.active').waitFor();await page.locator('#btn-start').click();assert.match(await page.locator('#quiz-progress-label').textContent(),/ข้อ 2/);
+  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('hbd-mel-quiz-progress-v1')));assert.equal(saved.log.length,1);assert.equal(saved.log[0].picked,'Nong Meaow');
 });
