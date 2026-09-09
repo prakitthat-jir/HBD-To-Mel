@@ -771,15 +771,15 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 <!-- ==========================================================================
      SCREEN 5 — เค้ก / เป่าเทียน
      ========================================================================== -->
-<section id="screen-cake" class="screen">
+<section id="screen-cake" class="screen" data-phase="decorate">
   <div class="wrap decorator-wrap text-center">
-    <p class="chip mx-auto mb-3">Chapter 3</p>
-    <h2 class="text-2xl md:text-3xl font-medium">เค้กก้อนนี้ เป็นของเธอ 🎂</h2>
-    <p class="font-cute mb-5" style="color:var(--muted)">เลือกของตกแต่งทีละชิ้น หมุนเค้กได้รอบตัว แล้วสร้างเค้กที่เป็นเธอ</p>
+    <p class="chip mx-auto mb-3">Chapter 3</p><div class="cake-stepper" aria-label="ขั้นตอนเค้ก"><span id="cake-step-edit" aria-current="step">01 · แต่งเค้ก</span><i>→</i><span id="cake-step-show">02 · Show cake</span></div>
+    <h2 id="cake-title" class="text-2xl md:text-3xl font-medium">เค้กก้อนนี้ เป็นของเธอ 🎂</h2>
+    <p id="cake-subtitle" class="font-cute mb-5" style="color:var(--muted)">เลือกของตกแต่งทีละชิ้น หมุนเค้กได้รอบตัว แล้วสร้างเค้กที่เป็นเธอ</p>
     <div class="decorator-layout">
       <div class="cake-workspace card">
         <div class="cake-workspace-label">MEL’S GRAND PÂTISSERIE <span>♡ made by you</span></div>
-        <div id="cake-viewport"><canvas id="cake-canvas" width="800" height="650" tabindex="0" aria-label="เค้กสามมิติ ลากเพื่อหมุน เลือกไอคอนแล้วแตะเพื่อวาง ใช้ลูกศรเพื่อหมุนและ Enter เพื่อวางตรงกลาง"></canvas><span class="cake-live-badge">✦ LIVE 3D ATELIER</span></div>
+        <div id="cake-viewport"><canvas id="cake-canvas" width="800" height="650" tabindex="0" aria-label="เค้กสามมิติ ลากเพื่อหมุน เลือกไอคอนแล้วแตะเพื่อวาง ใช้ลูกศรเพื่อหมุนและ Enter เพื่อวางตรงกลาง"></canvas><div id="cake-candle-targets"></div><span class="cake-live-badge">✦ LIVE 3D ATELIER</span></div>
         <div class="cake-3d-controls">
           <button id="cake-orbit" type="button" aria-pressed="true">↔ หมุน / เลือกชิ้น</button>
           <button id="cake-auto" type="button" aria-pressed="true">Ⅱ หยุดหมุน</button>
@@ -803,23 +803,23 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
           <button type="button" role="tab" id="tab-text" aria-controls="panel-text" aria-selected="false" data-panel="text">✎ ข้อความ</button>
         </div>
         <div id="panel-base" role="tabpanel" aria-labelledby="tab-base" class="cake-tool-panel" hidden>
-          <label for="cake-flavor">รสชาติที่ชอบ</label>
-          <select id="cake-flavor" class="field"><option value="#f5a9bd">🍓 Strawberry</option><option value="#664035">🍫 Chocolate</option><option value="#f5e5bb">🍦 Vanilla</option><option value="#b4cc8e">🍵 Matcha</option></select>
+          <label for="cake-tier">เลือกชั้นที่จะปรับ</label><select id="cake-tier" class="field"><option value="0">ชั้น 1 · ชั้นล่าง</option><option value="1">ชั้น 2 · ชั้นบน</option></select><p id="cake-tier-summary"></p><label for="cake-flavor">รสชาติของชั้นนี้</label>
+          <select id="cake-flavor" class="field"><option value="#f5a9bd">🍓 Strawberry</option><option value="#664035">🍫 Chocolate</option><option value="#f5e5bb">🍦 Vanilla</option><option value="#b4cc8e">🍵 Matcha</option><option value="#fff4dc">🥛 รสนม</option><option value="#c9bfb0">🍪 โอริโอ้</option><option value="#c7d6a3">🍵 มัทฉะลาเต้</option><option value="#a47755">☕ กาแฟ</option></select>
           <label for="cake-size">ขนาดเค้ก</label>
           <select id="cake-size" class="field"><option value="1">Small · 1 ชั้น</option><option value="2" selected>Medium · 2 ชั้น</option><option value="3">Large · 3 ชั้น</option></select>
-          <label for="cake-frosting">ลายครีม</label>
+          <label for="cake-layers">เลเยอร์ในชั้นนี้</label><select id="cake-layers" class="field"><option value="1">เนื้อเค้ก 1 เลเยอร์</option><option value="2" selected>เนื้อเค้ก 2 เลเยอร์</option><option value="3">เนื้อเค้ก 3 เลเยอร์</option><option value="4">เนื้อเค้ก 4 เลเยอร์</option></select><label for="cake-filling">ไส้ระหว่างเลเยอร์</label><select id="cake-filling" class="field"><option value="#fff6e9">ครีมนม</option><option value="#e796b5">ครีมสตรอว์เบอร์รี</option><option value="#513027">ช็อกโกแลต</option><option value="#a8bc79">ครีมมัทฉะ</option><option value="#c69959">คาราเมล</option></select><label for="cake-topper">ป้ายและมงกุฎดาว <input id="cake-topper" type="checkbox" checked></label><label for="cake-frosting">ลายครีม</label>
           <select id="cake-frosting" class="field"><option value="drip">ครีมหยดนุ่ม ๆ</option><option value="shell">ครีมกลีบดอกไม้</option><option value="smooth">เคลือบเรียบ</option><option value="none">ไม่ใส่ครีม</option></select>
           <label for="cake-frost-color">สีครีมเคลือบ <input id="cake-frost-color" type="color" value="#fff6e9"></label>
         </div>
         <div id="panel-toppings" role="tabpanel" aria-labelledby="tab-toppings" class="cake-tool-panel">
-          <p>เลือกไอคอน แล้วแตะบนผิวเค้กเพื่อวางทีละชิ้น ลากเค้กเพื่อหมุนไปตกแต่งอีกด้านได้เลย</p><div id="cake-toppings" class="topping-grid"></div>
+          <button id="cake-open-catalog" class="btn btn-primary" type="button">เปิดตู้ของตกแต่ง 3D ✦</button><p>ดูโมเดลชิ้นจริงก่อนเลือก แล้วแตะบนเค้กเพื่อวาง</p><div id="cake-toppings" class="topping-grid"></div>
           <div id="cake-selection" class="cake-selection" hidden>
             <p id="cake-selected-name">ของตกแต่งที่เลือก</p>
             <label>ขนาด <input id="cake-item-scale" aria-label="ขนาดของตกแต่ง" type="range" min="0.55" max="1.8" step="0.05" value="1"></label>
             <label>หมุนชิ้นนี้ <input id="cake-item-angle" aria-label="หมุนของตกแต่ง" type="range" min="0" max="360" step="5" value="0"></label>
-            <div class="cake-selection-actions"><button id="cake-move-item" type="button">↗ ย้ายชิ้นนี้</button><button id="cake-delete-item" type="button">× ลบชิ้นนี้</button></div>
+            <div class="cake-selection-actions"><button id="cake-copy-item" type="button">＋ ทำสำเนา</button><button id="cake-move-item" type="button">↗ ย้ายชิ้นนี้</button><button id="cake-delete-item" type="button">× ลบชิ้นนี้</button></div>
           </div>
-          <button id="cake-rain" type="button" class="btn btn-primary">โปรยเรนโบว์ 🌈</button>
+          <details class="cake-inventory"><summary>เลือกชิ้นที่วางแล้ว / ลบทีละชิ้น <span id="cake-item-count">0</span></summary><div id="cake-item-list"></div></details><label for="cake-preset">จัดตกแต่งให้เป็นชุด</label><select id="cake-preset" class="field"><option value="berry">Strawberry garden</option><option value="cookie">Cookies & cream</option><option value="romance">Pink romance</option></select><button id="cake-apply-preset" type="button" class="btn btn-ghost">เพิ่มชุดตกแต่ง ✨</button><button id="cake-rain" type="button" class="btn btn-primary">โปรยเรนโบว์ 🌈</button>
         </div>
         <div id="panel-piping" role="tabpanel" aria-labelledby="tab-piping" class="cake-tool-panel" hidden>
           <p>ลากนิ้วเพื่อบีบครีม หรือแตะเพื่อทำจุด</p>
@@ -833,8 +833,13 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
         </div>
       </aside>
     </div>
-    <button id="btn-blow" class="btn btn-primary mt-4">อธิษฐานแล้วเป่าเทียน 💨</button>
-    <button id="cake-continue" class="btn btn-ghost mt-4">ไปอ่านจดหมาย 💌</button>
+    <button id="cake-show" type="button" class="btn btn-primary mt-4">แต่งเสร็จแล้ว → Show cake ✨</button>
+    <div id="cake-show-actions" hidden>
+      <p id="cake-show-title" class="font-script">Make a wish, Mel ♡</p><p id="cake-candle-count" role="status"></p>
+      <button id="btn-blow" class="btn btn-primary mt-4">เป่าเทียน 1 เล่ม 💨</button>
+      <button id="cake-relight" class="btn btn-ghost mt-4" type="button">จุดเทียนใหม่ ✨</button>
+      <div><button id="cake-back-edit" class="btn btn-ghost mt-4" type="button">← กลับไปแต่งเค้ก</button><button id="cake-continue" class="btn btn-primary mt-4">ไปอ่านจดหมาย 💌</button></div>
+    </div>
   </div>
 </section>
 
@@ -1790,6 +1795,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   $("btn-goto-gallery").addEventListener("click", () => showScreen("screen-gallery", "gallery"));
   $("btn-goto-cake").addEventListener("click", () => showScreen("screen-cake", "cake"));
   document.addEventListener("cake-sound", () => sfx("tap"));
+  document.addEventListener("cake-celebrate", () => { rain(45); sfx("ok"); });
   document.addEventListener("cake-finished", () => { rain(30); sfx("ok"); showScreen("screen-letter", "letter"); });
 
   /* ========================================================================
@@ -2046,6 +2052,6 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 </dialog>
 <script src="assets/memories.js"></script>
 <script src="assets/music.js"></script>
-<script src="assets/cake-loader.js"></script>
+<dialog id="cake-catalog" aria-labelledby="cake-catalog-title"><div class="catalog-heading"><div><small>THE DECORATION BOUTIQUE</small><h2 id="cake-catalog-title">เลือกชิ้นที่ใช่ ให้เค้กของเธอ</h2></div><button id="cake-catalog-close" type="button" aria-label="ปิดตู้ของตกแต่ง">×</button></div><div class="catalog-layout"><div class="catalog-preview"><canvas id="cake-preview-canvas" width="360" height="330" aria-label="โมเดลของตกแต่ง 3D ชิ้นจริงที่กำลังหมุน"></canvas><h3 id="cake-preview-name"></h3><p>โมเดลเดียวกับชิ้นที่จะวางบนเค้ก</p><label>ขนาดชิ้น <input id="cake-preview-scale" type="range" min="0.55" max="1.8" step="0.05" value="1"></label><button id="cake-preview-use" type="button" class="btn btn-primary">เลือกชิ้นนี้ แล้ววางบนเค้ก</button></div><div id="cake-catalog-grid"></div></div></dialog><script src="assets/cake-loader.js"></script>
 </body>
 </html>

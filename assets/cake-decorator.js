@@ -6,6 +6,7 @@
   const W = 800, H = 650, reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const toppings = [['strawberry','🍓','สตรอว์เบอร์รี'],['cherry','🍒','เชอร์รี'],['sprinkles','🌈','เรนโบว์'],['chocolate','🍫','ช็อกโกแลต'],['candle','🕯️','เทียน'],['cream','🍦','วิปครีม'],['flower','🌸','ดอกไม้'],['bow','🎀','โบว์']];
   const initial = () => ({flavor:'#f5a9bd',size:2,frosting:'drip',frostColor:'#fff6e9',items:[330,400,470].map(x=>({type:'candle',x,y:340,lit:true})),strokes:[]});
+  let phase='decorate';
   let cake = initial(), history = [], mode = 'toppings', selected = 'strawberry', drawing = null;
   let keyboard = {x:400,y:365}, showCursor = false, frame = 0, finishing = false;
   let oldColor = cake.flavor, colorStart = 0;
@@ -146,15 +147,19 @@
     const out=document.createElement('canvas');out.width=W*2;out.height=H*2;const c=out.getContext('2d');c.scale(2,2);draw(c,performance.now(),true);
     out.toBlob(blob=>{if(!blob){status('บันทึกภาพไม่สำเร็จ ลองอีกครั้งนะ');return;}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Mel-birthday-cake.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);status('บันทึกภาพเค้ก PNG แล้ว ♡');},'image/png');sound();
   });
+  function syncFallbackShow(){const lit=cake.items.filter(i=>i.type==='candle'&&i.lit).length;const total=cake.items.filter(i=>i.type==='candle').length;document.getElementById('screen-cake').dataset.phase=phase;$('cake-show-actions').hidden=phase!=='show';$('cake-show').hidden=phase==='show';$('btn-blow').disabled=!lit;$('cake-continue').disabled=phase==='show'&&lit>0;$('cake-candle-count').textContent='เทียนที่ยังติดอยู่ '+lit+' / '+total+' เล่ม';}
+  $('cake-show').addEventListener('click',()=>{phase='show';cake.items.filter(i=>i.type==='candle').forEach(i=>i.lit=true);syncFallbackShow();});
+  $('cake-back-edit').addEventListener('click',()=>{phase='decorate';syncFallbackShow();});
+  $('cake-relight').addEventListener('click',()=>{cake.items.filter(i=>i.type==='candle').forEach(i=>i.lit=true);changed();syncFallbackShow();});
   $('btn-blow').addEventListener('click',()=>{
     if(finishing)return;const lit=cake.items.filter(i=>i.type==='candle'&&i.lit);
     if(!lit.length){status('เพิ่มเทียนก่อนเป่านะ หรือกดไปอ่านจดหมายได้เลย');return;}
-    remember();lit.forEach(i=>i.lit=false);changed('ฟู่ววว~ ขอให้พรของเธอเป็นจริง 💗');
+    lit[0].lit=false;changed('ฟู่ววว~ ขอให้พรของเธอเป็นจริง 💗');syncFallbackShow();
   });
-  $('cake-continue').addEventListener('click',()=>{if(finishing)return;finishing=true;document.dispatchEvent(new Event('cake-finished'));});
+  $('cake-continue').addEventListener('click',()=>{if(finishing||phase!=='show'||cake.items.some(i=>i.type==='candle'&&i.lit))return;finishing=true;document.dispatchEvent(new Event('cake-finished'));});
   // Animate only while this chapter is visible; honor reduced motion preferences.
   function tick(now){frame=0;if(!$('screen-cake').classList.contains('active')||document.hidden)return;draw(ctx,now);frame=requestAnimationFrame(tick);}
   function activate(){if(frame)cancelAnimationFrame(frame);frame=0;if($('screen-cake').classList.contains('active')&&!document.hidden){finishing=false;frame=requestAnimationFrame(tick);}}
   new MutationObserver(activate).observe($('screen-cake'),{attributes:true,attributeFilter:['class']});document.addEventListener('visibilitychange',activate);
-  sync();draw(ctx,performance.now(),true);
+  sync();draw(ctx,performance.now(),true);status('เครื่องนี้แสดงเค้กแบบ 2D เลือกของตกแต่งแล้วแตะเพื่อวางได้เลย');
 })();
