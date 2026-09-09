@@ -619,19 +619,14 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   <div class="wrap max-w-sm">
     <div class="card p-8 text-center stagger">
       <div class="text-6xl mb-1" style="animation: riseIn .8s var(--bounce) both">🔐</div>
-      <h1 class="text-2xl font-medium mt-3">มีของขวัญรออยู่นะ…</h1>
-      <p class="text-sm mt-2 mb-1" style="color:var(--muted)">ใส่รหัสผ่านเพื่อปลดล็อกความเซอร์ไพรส์ 🎁</p>
+      <h1 class="text-2xl font-medium mt-3">โปรดใส่รหัสผ่านเพื่อปลดล็อกเซอร์ไพรส์</h1>
       <p class="text-xs mb-5" style="color:var(--primary)">⚠️ มีโอกาสลองได้แค่ <b>3 ครั้ง</b> เท่านั้นน้า</p>
       <div>
-        <input id="lock-input" type="text" inputmode="text" autocomplete="off" placeholder="พิมพ์รหัสผ่าน…"
+        <input id="lock-input" type="password" inputmode="numeric" autocomplete="off" placeholder="Password" aria-label="Password"
                class="field text-center text-lg font-cute" />
         <p id="lock-error" class="text-sm h-6 mt-2" style="color:var(--no)"></p>
       </div>
       <button id="btn-unlock" class="btn btn-primary w-full">ปลดล็อก 🔓</button>
-      <!-- Hint ซ่อนไว้ก่อน จะโผล่เมื่อใส่ผิดครบ 2 ครั้ง -->
-      <div id="lock-hint" class="reveal">
-        <div class="reveal-inner text-xs mt-5">💡 <b>Hint:</b> ชื่อขนมที่หวานเหมือนเจ้าของวันเกิดคนนี้แหละ 😉</div>
-      </div>
     </div>
   </div>
 </section>
@@ -900,7 +895,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   const CONFIG = {
     friendName: "Mel",
     enableLock: true,
-    password: "caramel",        // ไม่สนตัวพิมพ์เล็ก/ใหญ่ และช่องว่าง
+    password: "23092001",        // รหัสผ่านวันเดือนปีเกิด
   };
 
   /* ------------------------------------------------------------------------
@@ -1361,19 +1356,20 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     $("stepbar").classList.add("show");
     showScreen("screen-landing", "landing");
   }
-  // ตัดช่องว่าง + ไม่สนตัวพิมพ์เล็ก/ใหญ่ (CARAMEL = Caramel = caramel)
+  // ตัดช่องว่าง + ไม่สนตัวพิมพ์เล็ก/ใหญ่
   const normalize = (s) => String(s).trim().toLowerCase().replace(/\s+/g, "");
 
   let lockTries = 0;
   const LOCK_MSG = [
     "รหัสไม่ถูกน้า เหลืออีก 2 ครั้ง 🥺",
-    "ผิดอีกแล้ว… เหลืออีก 1 ครั้งสุดท้าย 😬 (ใบ้ให้แล้วข้างล่าง)",
+    "ผิดอีกแล้ว… เหลืออีก 1 ครั้งสุดท้าย 😬",
     "หมดสิทธิ์แล้วจ้า… ล้อเล่นน้า 😝 ลองต่อได้เรื่อยๆ เลย",
     "ยังไม่ถูกน้า ใจเย็นๆ ค่อยๆ คิด 🍮",
     "เกือบแล้ว! (ไม่หรอก) ลองใหม่อีกที 😆",
   ];
 
   function tryUnlock() {
+    if (!$("modal").classList.contains("hidden")) return;
     const v = normalize($("lock-input").value);
     if (v === normalize(CONFIG.password)) {
       $("lock-error").textContent = "";
@@ -1387,10 +1383,15 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     $("lock-input").classList.add("shake");
     setTimeout(() => $("lock-input").classList.remove("shake"), 500);
     sfx("no");
-    if (lockTries >= 2) $("lock-hint").classList.add("show");   // ผิดครบ 2 ครั้ง → เปิด Hint
+    if (lockTries <= 2) {
+      askConfirm({ emoji: "💡", title: "Hint", text: "เลขวันเดือนปีเกิดของคุณ", okLabel: "ลองอีกครั้ง", onlyOk: true })
+        .then(() => $("lock-input").focus());
+    }
   }
   $("btn-unlock").addEventListener("click", tryUnlock);
-  $("lock-input").addEventListener("keydown", (e) => { if (e.key === "Enter") tryUnlock(); });
+  $("lock-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); tryUnlock(); }
+  });
   if (!CONFIG.enableLock) { $("screen-lock").classList.remove("active"); unlock(); }
 
   /* ========================================================================

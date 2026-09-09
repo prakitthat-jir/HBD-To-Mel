@@ -48,7 +48,14 @@ async function setup(t, options = {}) {
   await page.locator('#lock-input').fill('wrong');
   await page.locator('#btn-unlock').click();
   assert.match(await page.locator('#lock-error').textContent(), /รหัสไม่ถูก/);
-  await page.locator('#lock-input').fill(' CARAMEL ');
+  assert.equal(await page.locator('#modal-text').textContent(), 'เลขวันเดือนปีเกิดของคุณ');
+  await page.locator('#modal-ok').click();
+  await page.locator('#lock-input').fill('wrong-again');
+  await page.locator('#lock-input').press('Enter');
+  await page.locator('#modal:not(.hidden)').waitFor();
+  assert.equal(await page.locator('#modal-text').textContent(), 'เลขวันเดือนปีเกิดของคุณ');
+  await page.locator('#modal-ok').click();
+  await page.locator('#lock-input').fill('23092001');
   await page.locator('#btn-unlock').click();
   await page.locator('#screen-landing.active').waitFor();
   return page;
