@@ -551,7 +551,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 }
 </style>
 <link rel="stylesheet" href="assets/memories.css" />
-<link rel="stylesheet" href="assets/cake3d.css" />
+<link rel="stylesheet" href="assets/cake-decorator.css" />
 </head>
 <body class="antialiased">
 
@@ -654,7 +654,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     </div>
 
     <button id="btn-start" class="btn btn-primary text-lg px-10">เริ่มเลย 🚀</button>
-    <p class="text-xs mt-6" style="color:var(--muted)">ใช้เวลาประมาณ 3 นาที · เล่นบนมือถือได้สบายๆ</p>
+
   </div>
 </section>
 
@@ -736,7 +736,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
       <div id="result-prize" class="prize hidden mb-6">
         <p class="text-xs tracking-widest mb-1" style="color:var(--primary)">★ SPECIAL PRIZE ★</p>
         <p class="text-2xl mb-1">🎟️🍦</p>
-        <p class="font-cute leading-relaxed">คูปองไอศกรีม 1 ถ้วย (หรือชานมก็ได้)<br />จาก <b>Pyopapaya</b> — ไม่มีวันหมดอายุ</p>
+        <p class="font-cute leading-relaxed">ได้รับรางวัลพิเศษจาก <b>Pyopapaya</b></p>
         <p class="text-xs mt-2" style="color:var(--muted)">แคปหน้าจอนี้ไว้เป็นหลักฐานเลยน้า 😆</p>
       </div>
 
@@ -754,16 +754,16 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
      ========================================================================== -->
 <section id="screen-gallery" class="screen">
   <div class="wrap max-w-3xl text-center">
-    <p class="chip mx-auto mb-3">Chapter 02</p>
-    <h2 class="text-2xl md:text-3xl font-medium mb-1">วันธรรมดาที่พิเศษ เพราะมีเธอ 📸</h2>
-    <p class="text-sm mb-8 font-cute" style="color:var(--muted)">18 ความทรงจำ · หลายรอยยิ้ม · เมลคนเดิมที่น่ารักเสมอ</p>
+    <p class="chip mx-auto mb-3">Chapter 2</p>
+    <h2 class="text-2xl md:text-3xl font-medium mb-1">แด่เธอในวัย 24</h2>
+    <p class="text-sm mb-8 font-cute" style="color:var(--muted)">ผ่านมุมมองของฉัน 📸</p>
 
-    <div class="album-intro"><span class="font-script">Dear Mel,</span><p>เก็บช่วงเวลาเหล่านี้ไว้<br />แล้วมาเติมความทรงจำดีๆ อีกเยอะๆ เลยนะ ♡</p><span class="album-sticker" aria-hidden="true">made with<br />♡ & smiles</span></div>
+    <div class="album-intro"><span class="font-script">Dear Mel,</span><p>นี่คือรูปของเธอวัย 24 ผ่านมุมมองของฉัน<br />ขอบคุณที่ผ่านเข้ามาในชีวิต เธอเติบโตขึ้นเยอะเลย (โตด้านข้าง)</p><span class="album-sticker" aria-hidden="true">made with<br />♡ & smiles</span></div>
     <p class="album-tip">เลื่อนดูรอยยิ้ม · แตะเปิดรูป · ปัดซ้าย–ขวาเพื่อดูต่อ ✨</p>
     <div id="memory-gallery" class="memory-grid"></div>
     <p class="album-ending font-cute">รูปอาจหยุดเวลาไม่ได้… แต่เก็บรอยยิ้มไว้ได้เสมอ 💌</p>
 
-    <button id="btn-goto-cake" class="btn btn-primary">ไปต่อกันที่เค้ก 🎂</button>
+    <button id="btn-goto-cake" class="btn btn-primary">ไปต่อ</button>
   </div>
 </section>
 
@@ -772,60 +772,55 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
      SCREEN 5 — เค้ก / เป่าเทียน
      ========================================================================== -->
 <section id="screen-cake" class="screen">
-  <div class="wrap max-w-md text-center">
-    <div id="cake-atelier" hidden>
-      <div id="cake-viewport" tabindex="0" role="group" aria-label="เค้กสามมิติ ลากเพื่อหมุน ใช้ปุ่มลูกศรเปลี่ยนมุมมอง หรือแตะเทียนเพื่อเป่า"></div>
-      <div class="cake-view-controls" aria-label="ปรับมุมมองเค้ก">
-        <button id="cake-rotate-left" type="button" aria-label="หมุนเค้กไปทางซ้าย">↶</button>
-        <button id="cake-auto" type="button" aria-pressed="true">Ⅱ หยุดหมุน</button>
-        <button id="cake-reset" type="button">มุมเริ่มต้น</button>
-        <button id="cake-rotate-right" type="button" aria-label="หมุนเค้กไปทางขวา">↷</button>
-      </div>
-      <label class="cake-zoom">− <input id="cake-zoom" type="range" min="0.85" max="1.3" value="1" step="0.01" aria-label="ซูมเค้ก" /> +</label>
-    </div>
-    <div class="cake-stage mb-7">
-      <div class="glow"></div>
-
-      <div id="cake-scene" class="cake-scene">
-        <div class="cake-bob">
-
-          <!-- ป้ายบนเค้ก — TODO: แก้ข้อความ/อายุตรงนี้ได้เลย -->
-          <div class="topper">
-            <div class="topper-sign font-cute">HBD To Mel</div>
-            <span class="topper-stick" style="left:9%"></span>
-            <span class="topper-stick" style="right:9%"></span>
-          </div>
-
-          <!-- เทียน 3 เล่ม -->
-          <div class="candle-row">
-            <div class="candle" data-candle="1" style="--i:0"><span class="flame"></span><span class="smoke"></span></div>
-            <div class="candle" data-candle="2" style="--i:1"><span class="flame"></span><span class="smoke"></span></div>
-            <div class="candle" data-candle="3" style="--i:2"><span class="flame"></span><span class="smoke"></span></div>
-          </div>
-
-          <!-- ตัวเค้ก 2 ชั้น -->
-          <div class="relative" style="z-index:1">
-            <!-- ชั้นบน -->
-            <div class="tier mx-auto" style="width:70%;height:58px;background:linear-gradient(180deg,#fff1f2,#ffd3da)">
-              <span class="frosting" style="--frost:#fffafa"></span>
-              <span id="sprinkles-top" class="absolute inset-0 pointer-events-none"></span>
-            </div>
-            <!-- ชั้นล่าง -->
-            <div class="tier" style="height:78px;margin-top:-2px;background:linear-gradient(180deg,#ffe0e4,#fda4af)">
-              <span class="frosting" style="height:17px;background-image:radial-gradient(circle at 13px 0, #fff1f3 13.5px, transparent 14px);background-size:26px 17px"></span>
-              <span class="stripes"></span>
-              <span id="sprinkles-bottom" class="absolute inset-0 pointer-events-none"></span>
-            </div>
-            <div class="plate"></div>
-          </div>
-
+  <div class="wrap decorator-wrap text-center">
+    <p class="chip mx-auto mb-3">Chapter 3</p>
+    <h2 class="text-2xl md:text-3xl font-medium">เค้กก้อนนี้ เป็นของเธอ 🎂</h2>
+    <p class="font-cute mb-5" style="color:var(--muted)">แต่งเค้กในแบบที่ชอบ แล้วอธิษฐานกันนะ</p>
+    <div class="decorator-layout">
+      <div class="cake-workspace card">
+        <div class="cake-workspace-label">MEL’S LITTLE CAKE STUDIO <span>♡ made by you</span></div>
+        <canvas id="cake-canvas" width="800" height="650" tabindex="0" aria-label="พื้นที่แต่งเค้ก เลือกของตกแต่งแล้วแตะเพื่อวาง หรือใช้ปุ่มลูกศรและ Enter"></canvas>
+        <p id="decorator-status" role="status">เลือกของตกแต่ง แล้วแตะบนเค้กเพื่อวางได้เลย</p>
+        <div class="cake-utilities">
+          <button id="cake-undo" class="btn btn-ghost" type="button">↶ Undo</button>
+          <button id="cake-clear" class="btn btn-ghost" type="button">เริ่มใหม่</button>
+          <button id="cake-export" class="btn btn-primary" type="button">บันทึก PNG ↓</button>
         </div>
       </div>
+      <aside class="cake-panel card" aria-label="เครื่องมือแต่งเค้ก">
+        <div class="cake-tabs" role="tablist" aria-label="หมวดเครื่องมือ">
+          <button type="button" role="tab" id="tab-base" aria-controls="panel-base" aria-selected="true" data-panel="base">🎂 เค้ก</button>
+          <button type="button" role="tab" id="tab-toppings" aria-controls="panel-toppings" aria-selected="false" data-panel="toppings">🍓 ท็อปปิง</button>
+          <button type="button" role="tab" id="tab-piping" aria-controls="panel-piping" aria-selected="false" data-panel="piping">〰 ครีม</button>
+          <button type="button" role="tab" id="tab-text" aria-controls="panel-text" aria-selected="false" data-panel="text">✎ ข้อความ</button>
+        </div>
+        <div id="panel-base" role="tabpanel" aria-labelledby="tab-base" class="cake-tool-panel">
+          <label for="cake-flavor">รสชาติที่ชอบ</label>
+          <select id="cake-flavor" class="field"><option value="#f5a9bd">🍓 Strawberry</option><option value="#664035">🍫 Chocolate</option><option value="#f5e5bb">🍦 Vanilla</option><option value="#b4cc8e">🍵 Matcha</option></select>
+          <label for="cake-size">ขนาดเค้ก</label>
+          <select id="cake-size" class="field"><option value="1">Small · 1 ชั้น</option><option value="2" selected>Medium · 2 ชั้น</option><option value="3">Large · 3 ชั้น</option></select>
+          <label for="cake-frosting">ลายครีม</label>
+          <select id="cake-frosting" class="field"><option value="drip">ครีมหยดนุ่ม ๆ</option><option value="shell">ครีมกลีบดอกไม้</option><option value="smooth">เคลือบเรียบ</option><option value="none">ไม่ใส่ครีม</option></select>
+          <label for="cake-frost-color">สีครีมเคลือบ <input id="cake-frost-color" type="color" value="#fff6e9"></label>
+        </div>
+        <div id="panel-toppings" role="tabpanel" aria-labelledby="tab-toppings" class="cake-tool-panel" hidden>
+          <p>เลือกแล้วแตะบนเค้ก หรือลากไปวาง</p><div id="cake-toppings" class="topping-grid"></div>
+          <button id="cake-rain" type="button" class="btn btn-primary">โปรยเรนโบว์ 🌈</button>
+        </div>
+        <div id="panel-piping" role="tabpanel" aria-labelledby="tab-piping" class="cake-tool-panel" hidden>
+          <p>ลากนิ้วเพื่อบีบครีม หรือแตะเพื่อทำจุด</p>
+          <label for="icing-color">สีไอซิง <input id="icing-color" type="color" value="#ffffff"></label>
+          <label for="icing-width">ขนาดหัวบีบ</label><input id="icing-width" type="range" min="4" max="30" value="12">
+        </div>
+        <div id="panel-text" role="tabpanel" aria-labelledby="tab-text" class="cake-tool-panel" hidden>
+          <label for="cake-message">ข้อความบนเค้ก</label><input id="cake-message" class="field" maxlength="60" value="Happy Birthday Mel!">
+          <label for="cake-text-color">สีข้อความ <input id="cake-text-color" type="color" value="#76384d"></label>
+          <button id="cake-add-text" type="button" class="btn btn-primary">เพิ่มข้อความบนเค้ก</button><p>หรือแตะบนเค้กเพื่อเลือกตำแหน่งข้อความ</p>
+        </div>
+      </aside>
     </div>
-
-    <p id="cake-hint" class="text-sm font-cute cake-copy" style="color:var(--muted)">เหลืออีก <b id="candles-left">3</b> เล่ม</p>
-    <button id="btn-blow" class="btn btn-primary mt-4">ฟู่ววว~ เป่าเทียน 💨</button>
-    <div id="flash"></div>
+    <button id="btn-blow" class="btn btn-primary mt-4">อธิษฐานแล้วเป่าเทียน 💨</button>
+    <button id="cake-continue" class="btn btn-ghost mt-4">ไปอ่านจดหมาย 💌</button>
   </div>
 </section>
 
@@ -980,7 +975,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     {
       type: "single",
       question: "เจ้าของวันเกิดชื่ออะไร?",
-      explanation: "ชื่อเมลน๊ะจ๊ะ อิอิ 😜 (ข้อนี้แกล้งเล่นน้า ตัวเลือก A มันวิ่งหนีตลอด — แต่แอบให้คะแนนไปแล้ว 💗)",
+      explanation: "ชื่อตัวเองยังตอบผิด คุณรู้จักตัวเองจริงไหมเนี่ยยยยยย แต่ไม่เป็นไรข้อแรกให้ฟรีีีีีี 😛",
       runaway: "A",
       freebie: true,
       choices: [
@@ -1006,7 +1001,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     {
       type: "single",
       question: "สิ่งที่เจ้าของวันเกิดชอบทำมากที่สุด?",
-      explanation: "Approved by เพื่อนร่วมงานสุดเท่ 💼 (อินเตอร์สอนให้เรารักงานจริงๆ นะ)",
+      explanation: "Approved by เพื่อนร่วมงานสุดเท่ห์ มาตรงเวลากลับตรงเวลา เป็นคนตรงต่อเวลา รักงานที่สุดดด",
       choices: [
         { key: "A", label: "ไอติมคือทุกอย่างของชีวิต", emoji: "🍦" },
         { key: "B", label: "ฉันรักอินเตอร์ เพราะอินเตอร์สอนให้ฉันรักงาน", emoji: "💼", correct: true },
@@ -1030,7 +1025,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
     {
       type: "single",
       question: "เจ้าของวันเกิดชอบดูหนังอะไร?",
-      explanation: "หนังตลกมันทางของพี่! ชีวิตต้องมีเสียงหัวเราะไว้ก่อน 🤣",
+      explanation: "ชีวิตต้องมีเสียงหัวเราะ มุขไม่ซ้ำ จำอันเก่าไม่ได้",
       choices: [
         { key: "A", label: "หนังไก่", emoji: "🐔" },
         { key: "B", label: "หนังผี", emoji: "👻" },
@@ -1062,15 +1057,15 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
         { key: "B", label: "ดอกไม้ทิชชู่ ฮั๊ดชิ่ว", emoji: "🤧", correct: true },
         { key: "C", label: "ดอกรักไหว้แม่", emoji: "💐", correct: true },
         { key: "D", label: "ไม่ชอบดอกไม้", emoji: "🚫", correct: true },
-        { key: "E", label: "หญ้า", emoji: "🌿", correct: true },
+        { key: "E", label: "ดอกกุหลาบ", emoji: "🌹", correct: true },
         { key: "F", label: "ดอกอะไรก็ได้", emoji: "🌼", correct: true },
       ],
     },
     {
-      type: "multi",
+      type: "single",
       question: "เจ้าของวันเกิดนิสัยเป็นแบบไหน?",
-      hint: "เลือกได้หลายข้อ (แต่มีข้อเดียวที่ตรงปก 😏)",
-      explanation: "Approved by เพื่อนสนิทที่รู้ทัน 😏 กวนส้นเท้าที่สุดในสามโลก",
+      hint: "เลือกได้ข้อเดียว",
+      explanation: "ผู้สร้างรู้ดีที่สุดดดดดดดด",
       choices: [
         { key: "A", label: "นิสัยดีย์ น่ารัก", emoji: "😇" },
         { key: "B", label: "เริ่ด", emoji: "💅" },
@@ -1779,90 +1774,9 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   }
 
   $("btn-goto-gallery").addEventListener("click", () => showScreen("screen-gallery", "gallery"));
-  let cakeStarted = false;
-  $("btn-goto-cake").addEventListener("click", () => {
-    if (cakeStarted) return;
-    cakeStarted = true;
-    showScreen("screen-cake", "cake");
-    setTimeout(enterCakeScene, 260);          // ปิดไฟ + จุดเทียนหลังหน้าเปลี่ยนเสร็จ
-  });
-
-  /* ========================================================================
-     SCREEN 5 — เค้ก / เป่าเทียน
-     ======================================================================== */
-  const CANDLES = [...document.querySelectorAll(".candle")];
-  const glowEl = document.querySelector(".glow");
-  let candlesLeft = CANDLES.length;
-
-  // ความสว่างของแสงเทียน = จำนวนเทียนที่ยังติดอยู่
-  function updateGlow() {
-    const lit = CANDLES.filter((c) => c.classList.contains("lit") && !c.classList.contains("out")).length;
-    glowEl.style.opacity = lit ? 0.34 + lit * 0.2 : 0;
-    glowEl.style.transform = `translate(-50%,-50%) scale(${lit ? 0.62 + lit * 0.14 : 0.4})`;
-  }
-
-  // เข้าหน้าเค้ก: ปิดไฟก่อน แล้วค่อยจุดเทียนทีละเล่ม
-  function enterCakeScene() {
-    document.body.classList.add("lights-off");
-    updateGlow();
-    CANDLES.forEach((c, i) => {
-      setTimeout(() => {
-        c.classList.add("lit");
-        updateGlow();
-        sfx("tick");
-      }, 1250 + i * 300);
-    });
-  }
-
-  function puffAt(candle) {
-    const scene = $("cake-scene");
-    const r = candle.getBoundingClientRect(), s = scene.getBoundingClientRect();
-    const p = el("span", "puff");
-    p.textContent = "💨";
-    p.style.left = r.left - s.left - 6 + "px";
-    p.style.top = r.top - s.top - 30 + "px";
-    scene.appendChild(p);
-    setTimeout(() => p.remove(), 800);
-  }
-
-  function blowCandle(candle) {
-    if (!candle || !candle.classList.contains("lit") || candle.classList.contains("out")) return;
-    candle.classList.add("out");
-    candlesLeft -= 1;
-    puffAt(candle);
-    updateGlow();
-    sfx("no");
-
-    // เค้กเด้งรับแรงลม
-    const scene = $("cake-scene");
-    scene.classList.remove("squash"); void scene.offsetWidth; scene.classList.add("squash");
-
-    const left = $("candles-left");
-    if (left) left.textContent = candlesLeft;
-    if (candlesLeft === 0) {
-      allCandlesOut();
-    }
-  }
-  CANDLES.forEach((c) => c.addEventListener("click", () => blowCandle(c)));
-  $("btn-blow").addEventListener("click", () => blowCandle(CANDLES.find((c) => c.classList.contains("lit") && !c.classList.contains("out"))));
-
-  function allCandlesOut() {
-    const scene = $("cake-scene");
-    $("cake-hint").textContent = "";
-    $("btn-blow").classList.add("hidden");
-
-    // มืดสนิทสักครู่ → แล้วค่อยเปิดไฟ
-    setTimeout(() => {
-      document.body.classList.remove("lights-off");
-      $("flash").classList.remove("on"); void $("flash").offsetWidth; $("flash").classList.add("on");
-      scene.classList.remove("squash", "cheer"); void scene.offsetWidth; scene.classList.add("cheer");
-      $("cake-hint").textContent = "ขอให้พรที่ขอเป็นจริงทุกข้อเลยน้า 💗";
-      rain(30);
-      sfx("ok");
-    }, 1400);
-
-    setTimeout(() => showScreen("screen-letter", "letter"), 4200);
-  }
+  $("btn-goto-cake").addEventListener("click", () => showScreen("screen-cake", "cake"));
+  document.addEventListener("cake-sound", () => sfx("tap"));
+  document.addEventListener("cake-finished", () => { rain(30); sfx("ok"); showScreen("screen-letter", "letter"); });
 
   /* ========================================================================
      SCREEN 6 — จดหมาย
@@ -2118,6 +2032,6 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 </dialog>
 <script src="assets/memories.js"></script>
 <script src="assets/music.js"></script>
-<script src="assets/cake-loader.js"></script>
+<script src="assets/cake-decorator.js"></script>
 </body>
 </html>

@@ -65,16 +65,14 @@ async function next(page) {
   await page.locator('#btn-next').click();
 }
 
-for (const width of [1280, 390]) test(`full birthday flow at ${width}px, exact multi-select and safe text`, async t => {
+for (const width of [1280, 390]) test(`full birthday flow at ${width}px, single-answer quiz and safe text`, async t => {
   const page = await setup(t, { viewport: { width, height: 900 } });
   await page.locator('#btn-start').click();
   for (const answer of ['B', 'D', 'B', 'F', 'E', 'C', 'A']) {
     await page.locator(`#quiz-choices [data-key="${answer}"]`).click();
     await next(page);
   }
-  await page.locator('#quiz-choices [data-key="A"]').click();
   await page.locator('#quiz-choices [data-key="F"]').click();
-  await page.locator('#btn-multi-check').click();
   await next(page);
   const payload = '<img src=x onerror="window.injected=true">';
   await page.locator('#quiz-text-input').fill(payload);
@@ -88,7 +86,7 @@ for (const width of [1280, 390]) test(`full birthday flow at ${width}px, exact m
   await page.locator('#screen-result.active').waitFor();
   fs.mkdirSync(path.join(__dirname, '..', 'test-results'), { recursive: true });
   await page.screenshot({ path: path.join(__dirname, '..', 'test-results', `result-${width}.png`), fullPage: true, animations: 'disabled' });
-  assert.equal(await page.locator('#result-score').textContent(), '9/10');
+  assert.equal(await page.locator('#result-score').textContent(), '10/10');
   assert.equal(await page.locator('#result-answers img').count(), 0);
   assert.ok((await page.locator('#result-answers').textContent()).includes(payload));
   assert.equal(await page.evaluate(() => window.injected), undefined);
@@ -129,8 +127,9 @@ for (const width of [1280, 390]) test(`full birthday flow at ${width}px, exact m
   assert.equal(await page.locator('.memory-card button').first().evaluate(button => document.activeElement === button), true);
   await page.locator('#btn-goto-cake').click();
   await page.locator('#screen-cake.active').waitFor();
-  await page.waitForFunction(() => document.querySelectorAll('.candle.lit').length === 3);
-  for (let i = 0; i < 3; i++) await page.locator('#btn-blow').click();
+  await page.locator('#btn-blow').click();
+  assert.equal(await page.locator('#cake-canvas').getAttribute('data-lit'), '0');
+  await page.locator('#cake-continue').click();
   await page.locator('#screen-letter.active').waitFor();
   await page.locator('#envelope').click();
   await page.locator('#letter-content').waitFor({ state: 'visible' });
@@ -336,72 +335,54 @@ test('storage quota failure retains successive comments in memory', async t => {
   assert.equal(await page.locator('.cmt').count(), 2);
 });
 
-for (const width of [1280,390]) test(`3D cake rotates, zooms and preserves candle flow at ${width}px`, async t => {
-  const page = await setup(t, {viewport:{width,height:950}});
-  await page.locator('#btn-goto-cake').evaluate(button => button.click());
-  await page.waitForFunction(() => document.querySelector('#screen-cake').dataset.renderer === 'webgl');
-  await page.waitForFunction(() => document.querySelector('#cake-viewport').dataset.lit === '3');
-  await page.locator('#cake-auto').click();
-  await page.locator('#cake-reset').click();
-  await page.waitForFunction(() => Math.abs(Number(document.querySelector('#cake-viewport').dataset.yaw)-.18)<.02);
-  const box=await page.locator('#cake-viewport').boundingBox();
-  await page.mouse.move(box.x+box.width*.7,box.y+box.height*.6);
-  await page.mouse.down();
-  await page.mouse.move(box.x+box.width*.3,box.y+box.height*.6,{steps:10});
-  await page.mouse.up();
-  await page.waitForFunction(() => Number(document.querySelector('#cake-viewport').dataset.yaw)<-.3);
-  assert.equal(await page.locator('#cake-auto').getAttribute('aria-pressed'),'false');
-  await page.locator('#cake-reset').click();
-  await page.waitForFunction(() => Math.abs(Number(document.querySelector('#cake-viewport').dataset.yaw)-.18)<.02);
-  await page.locator('#cake-zoom').fill('1.1');
-  await page.locator('#cake-zoom').dispatchEvent('input');
-  await page.waitForTimeout(300);
-  fs.mkdirSync(path.join(__dirname,'..','test-results'),{recursive:true});
-  await page.screenshot({path:path.join(__dirname,'..','test-results',`cake-3d-${width}.png`),fullPage:true});
-  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth<=innerWidth));
-  await page.locator('#cake-viewport').click({position:{x:box.width*.5,y:box.height*.31}});
-  await page.waitForFunction(() => document.querySelector('#cake-viewport').dataset.lit === '2');
-  await page.locator('#btn-blow').click();
-  await page.locator('#btn-blow').click();
-  await page.locator('#screen-letter.active').waitFor();
-  assert.equal(await page.locator('.candle.out').count(),3);
+for (const width of [1280,390]) test(`2D cake decoration, undo, PNG export and letter at ${width}px`, async t => {
+  const page=await setup(t,{viewport:{width,height:950}});
+  await page.locator('#btn-goto-cake').evaluate(b=>b.click());
+  await page.locator('#screen-cake.active').waitFor();
+  const canvas=page.locator('#cake-canvas');
+  const clickCake=async(x,y)=>{await canvas.scrollIntoViewIfNeeded();const r=await canvas.boundingBox();await canvas.click({position:{x:r.width*x/800,y:r.height*y/650}});};
+  assert.equal(await canvas.getAttribute('data-lit'),'3');
+  for(const flavor of ['#664035','#f5e5bb','#b4cc8e','#f5a9bd'])await page.locator('#cake-flavor').selectOption(flavor);
+  for(const size of ['1','3','2'])await page.locator('#cake-size').selectOption(size);
+  await page.locator('#cake-frosting').selectOption('shell');
+  await page.locator('#tab-toppings').click();
+  for(const topping of ['strawberry','cherry','chocolate','candle','cream','flower','bow']){
+    await page.locator(`[data-topping="${topping}"]`).click();await clickCake(280+Math.random()*240,440);
+  }
+  assert.equal(await canvas.getAttribute('data-items'),'10');
+  await page.locator('#cake-undo').click();assert.equal(await canvas.getAttribute('data-items'),'9');
+  await page.locator('#cake-rain').click();assert.equal(await canvas.getAttribute('data-items'),'74');
+  await page.locator('#tab-piping').click();await canvas.scrollIntoViewIfNeeded();
+  const r=await canvas.boundingBox();await page.mouse.move(r.x+r.width*.4,r.y+r.height*.7);await page.mouse.down();await page.mouse.move(r.x+r.width*.6,r.y+r.height*.7,{steps:10});await page.mouse.up();
+  assert.equal(await canvas.getAttribute('data-strokes'),'1');
+  await page.locator('#tab-text').click();await page.locator('#cake-message').fill('HBD Mel ♡');await page.locator('#cake-add-text').click();
+  assert.equal(await canvas.getAttribute('data-items'),'75');
+  await page.locator('#cake-clear').click();assert.equal(await canvas.getAttribute('data-items'),'3');
+  await page.locator('#cake-undo').click();assert.equal(await canvas.getAttribute('data-items'),'75');
+  const download=page.waitForEvent('download');await page.locator('#cake-export').click();const file=await download;
+  assert.equal(file.suggestedFilename(),'Mel-birthday-cake.png');const bytes=fs.readFileSync(await file.path());assert.equal(bytes.toString('hex',0,8),'89504e470d0a1a0a');assert.equal(bytes.readUInt32BE(16),1600);assert.equal(bytes.readUInt32BE(20),1300);
+  fs.mkdirSync(path.join(__dirname,'..','test-results'),{recursive:true});await page.screenshot({path:path.join(__dirname,'..','test-results',`cake-2d-${width}.png`),fullPage:true});
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.locator('#btn-blow').click();assert.equal(await canvas.getAttribute('data-lit'),'0');
+  await page.locator('#cake-continue').click();await page.locator('#screen-letter.active').waitFor();
 });
 
-test('3D cake gracefully uses the original cake when WebGL is unavailable', async t => {
-  const page=await setup(t,{init:()=>{
-    const get=HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext=function(type,...args){if(type.startsWith('webgl'))return null;return get.call(this,type,...args);};
-  }});
-  await page.locator('#btn-goto-cake').evaluate(button=>button.click());
-  await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.renderer==='fallback');
-  assert.equal(await page.locator('.cake-stage').isVisible(),true);
-  await page.waitForFunction(()=>document.querySelectorAll('.candle.lit').length===3);
-  for(let i=0;i<3;i++)await page.locator('#btn-blow').click();
-  await page.locator('#screen-letter.active').waitFor();
+test('captions persist independently and render user text safely',async t=>{
+  const page=await setup(t);await page.locator('#btn-goto-gallery').evaluate(b=>b.click());await page.locator('#screen-gallery.active').waitFor();
+  const cards=page.locator('.memory-card');
+  for(let i=0;i<2;i++){
+    await cards.nth(i).locator('summary').click();await cards.nth(i).locator('textarea').fill(i?'Another memory':'<img src=x onerror=alert(1)>');await cards.nth(i).locator('.caption-editor button').click();
+  }
+  await page.reload();await page.locator('#btn-goto-gallery').evaluate(b=>b.click());await page.locator('#screen-gallery.active').waitFor();
+  assert.equal(await cards.nth(0).locator('.memory-caption').textContent(),'<img src=x onerror=alert(1)>');assert.equal(await cards.nth(1).locator('.memory-caption').textContent(),'Another memory');assert.equal(await cards.locator('.memory-caption img').count(),0);
+  await cards.nth(0).locator('button').first().click();assert.equal(await page.locator('#photo-caption').textContent(),'<img src=x onerror=alert(1)>');
 });
 
-test('3D cake supports touch rotation, reduced motion and context loss', async t => {
-  const page=await setup(t,{viewport:{width:390,height:950}});
-  await page.emulateMedia({reducedMotion:'reduce'});
-  await page.locator('#btn-goto-cake').evaluate(button=>button.click());
-  await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.renderer==='webgl');
-  await page.waitForFunction(()=>document.querySelector('#cake-viewport').dataset.lit==='3');
-  assert.equal(await page.locator('#cake-auto').getAttribute('aria-pressed'),'false');
-  const yaw=await page.locator('#cake-viewport').getAttribute('data-yaw');
-  await page.waitForTimeout(250);
-  assert.equal(await page.locator('#cake-viewport').getAttribute('data-yaw'),yaw);
-  const touch=await page.context().newCDPSession(page);
-  await touch.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
-  const r=await page.locator('#cake-viewport').boundingBox();
-  const x=r.x+r.width*.7,y=r.y+r.height*.6;
-  await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
-  for(let i=1;i<=5;i++)await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x-i*24,y}]});
-  await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
-  await page.waitForFunction(()=>Number(document.querySelector('#cake-viewport').dataset.yaw)<-.5);
-  assert.equal(await page.locator('.candle.out').count(),0);
-  await page.locator('#cake-viewport canvas').evaluate(canvas=>canvas.getContext('webgl2').getExtension('WEBGL_lose_context').loseContext());
-  await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.renderer==='fallback');
-  assert.equal(await page.locator('.cake-stage').isVisible(),true);
-  await page.locator('#btn-blow').click();
-  assert.equal(await page.locator('.candle.out').count(),1);
+test('canvas touch coordinates, keyboard placement, and reduced motion',async t=>{
+  const page=await setup(t,{viewport:{width:390,height:950}});await page.emulateMedia({reducedMotion:'reduce'});
+  await page.locator('#btn-goto-cake').evaluate(b=>b.click());await page.locator('#screen-cake.active').waitFor();
+  const canvas=page.locator('#cake-canvas');await canvas.scrollIntoViewIfNeeded();const r=await canvas.boundingBox();
+  const touch=await page.context().newCDPSession(page);await touch.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
+  await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:r.x+r.width*.5,y:r.y+r.height*.7}]});await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  assert.equal(await canvas.getAttribute('data-items'),'4');await canvas.focus();await page.keyboard.press('ArrowRight');await page.keyboard.press('Enter');assert.equal(await canvas.getAttribute('data-items'),'5');
 });

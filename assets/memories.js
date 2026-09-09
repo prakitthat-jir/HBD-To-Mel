@@ -21,6 +21,13 @@
     ['m20', 'ไว้มาเติมอัลบั้มนี้ด้วยกันอีกนะ 💗', 'ภาพกลุ่มเพื่อนผ่านกระจกทรงกลมในร้าน'],
   ];
   const gallery = document.getElementById('memory-gallery');
+  // Default captions live in photos above; edits are saved by photo ID on this device.
+  let savedCaptions = {};
+  try {
+    const saved = JSON.parse(localStorage.getItem('hbd-mel-captions') || '{}');
+    if (saved && typeof saved === 'object' && !Array.isArray(saved)) savedCaptions = saved;
+  } catch { /* A blocked storage API must not prevent opening the album. */ }
+  photos.forEach(photo => { if (typeof savedCaptions[photo[0]] === 'string') photo[1] = savedCaptions[photo[0]].slice(0, 240); });
   const viewer = document.getElementById('photo-viewer');
   const image = document.getElementById('photo-full');
   const thumbnails = document.getElementById('photo-thumbnails');
@@ -107,6 +114,19 @@
     const cap = document.createElement('span'); cap.className = 'memory-caption'; cap.textContent = text;
     const number = document.createElement('span'); number.className = 'memory-number'; number.textContent = `MEMORY ${String(index + 1).padStart(2, '0')} / 18 ♡`;
     button.append(img, cap, number); card.append(button); gallery.append(card);
+    const editor = document.createElement('details'); editor.className = 'caption-editor';
+    const summary = document.createElement('summary'); summary.textContent = '✎ แก้ไขแคปชั่น';
+    const input = document.createElement('textarea'); input.value = text; input.maxLength = 240; input.rows = 3;
+    input.setAttribute('aria-label', `แคปชั่นรูปที่ ${index + 1}`);
+    const save = document.createElement('button'); save.type = 'button'; save.textContent = 'บันทึกแคปชั่น';
+    const status = document.createElement('p'); status.setAttribute('role', 'status');
+    editor.append(summary, input, save, status); card.append(editor);
+    save.addEventListener('click', () => {
+      photos[index][1] = input.value; cap.textContent = input.value; savedCaptions[file] = input.value;
+      if (current === index) caption.textContent = input.value;
+      try { localStorage.setItem('hbd-mel-captions', JSON.stringify(savedCaptions)); status.textContent = 'บันทึกในเครื่องนี้แล้ว ♡'; }
+      catch { status.textContent = 'แสดงข้อความแล้ว แต่เครื่องนี้บันทึกถาวรไม่ได้'; }
+    });
     revealObserver.observe(card);
 
     const thumb = document.createElement('button'); thumb.type = 'button';
