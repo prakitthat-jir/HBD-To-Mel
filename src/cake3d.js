@@ -1,240 +1,312 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-const screen = document.getElementById('screen-cake');
-const atelier = document.getElementById('cake-atelier');
-const viewport = document.getElementById('cake-viewport');
-const candleNodes = [...document.querySelectorAll('.candle')];
-const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+const $=id=>document.getElementById(id), screen=$('screen-cake'), canvas=$('cake-canvas');
+const reduced=matchMedia('(prefers-reduced-motion: reduce)');
 let renderer;
-try { initialize(); }
-catch (error) {
-  renderer?.dispose();
-  atelier.hidden = true;
-  screen.classList.remove('has-3d');
-  screen.dataset.renderer = 'fallback';
-  console.warn('3D cake unavailable; using the interactive CSS cake.', error.message);
+try { renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:true}); }
+catch {
+  // A canvas cannot switch from WebGL to 2D, so use a fresh canvas for fallback.
+  canvas.replaceWith(canvas.cloneNode());screen.dataset.renderer='fallback';
+  const script=document.createElement('script');script.src='assets/cake-decorator.js';document.head.append(script);
 }
+if(renderer) initialize();
 
-function initialize() {
-  renderer = new THREE.WebGLRenderer({alpha:true, antialias:true, powerPreference:'low-power'});
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.6));
-  renderer.setClearColor(0x000000, 0);
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = .9;
-  viewport.append(renderer.domElement);
-  renderer.domElement.setAttribute('aria-hidden', 'true');
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(36, 1, .1, 40);
-  const model = new THREE.Group(); scene.add(model);
-  const envScene = new RoomEnvironment();
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  const envTarget = pmrem.fromScene(envScene, .04);
-  scene.environment = envTarget.texture;
-  scene.environmentIntensity = .65;
-  envScene.dispose(); pmrem.dispose();
-  const ambient = new THREE.HemisphereLight(0xfff3e5, 0x7b4c65, 2); scene.add(ambient);
-  const key = new THREE.DirectionalLight(0xffedd7, 3.8); key.position.set(-3,6,4); key.castShadow=true;
-  key.shadow.mapSize.set(1024,1024); key.shadow.camera.left=-3; key.shadow.camera.right=3;
-  key.shadow.camera.top=5; key.shadow.camera.bottom=-2; key.shadow.normalBias=.025; key.shadow.bias=-.0002;
-  key.shadow.radius=4; scene.add(key);
-  const rim = new THREE.DirectionalLight(0xffb7b9, 2); rim.position.set(3,4,-3); scene.add(rim);
-  const fill = new THREE.DirectionalLight(0xe3e8ff, 1.2); fill.position.set(2,2,5); scene.add(fill);
-  const mat = (color, roughness=.6, metalness=0) => new THREE.MeshStandardMaterial({color,roughness,metalness});
-  const ivory=mat('#fff2d8',.72), vanilla=mat('#f7d5b8',.85), rose=mat('#d47f91',.52), blush=mat('#efb7ba',.55);
-  const gold=mat('#d4a75f',.28,.82), porcelain=mat('#f6dfd0',.25,.08), leaf=mat('#467155',.62);
-  const glaze=new THREE.MeshPhysicalMaterial({color:'#fff0dc',roughness:.3,clearcoat:.35});
-  const berryMat=new THREE.MeshPhysicalMaterial({color:'#b93250',roughness:.45,clearcoat:.25});
-  const seedMat=mat('#e8b775',.55), wickMat=mat('#3a2425',1);
-  const sphere = new THREE.SphereGeometry(1,16,12);
-  const dummy = new THREE.Object3D();
-  function mesh(geometry,material,parent=model,x=0,y=0,z=0) {
-    const item=new THREE.Mesh(geometry,material); item.position.set(x,y,z); item.castShadow=true; item.receiveShadow=true; parent.add(item); return item;
+function initialize(){
+  renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setClearColor(0,0);
+  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.02;
+  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(36,1,.1,40);
+  const model=new THREE.Group(),base=new THREE.Group(),art=new THREE.Group();scene.add(model);model.add(base,art);
+  const env=new RoomEnvironment(),pmrem=new THREE.PMREMGenerator(renderer),envTarget=pmrem.fromScene(env,.04);
+  scene.environment=envTarget.texture;scene.environmentIntensity=.65;env.dispose();pmrem.dispose();
+  const ambient=new THREE.HemisphereLight('#fff3df','#796079',1.5);scene.add(ambient);
+  const key=new THREE.DirectionalLight('#ffe6c3',3.3);key.position.set(-3,6,4);key.castShadow=true;
+  key.shadow.mapSize.set(1024,1024);Object.assign(key.shadow.camera,{left:-3,right:3,top:5,bottom:-2});key.shadow.normalBias=.025;key.shadow.bias=-.0002;scene.add(key);
+  const rim=new THREE.DirectionalLight('#ffc2d7',2);rim.position.set(3,4,-3);scene.add(rim);
+  const fill=new THREE.DirectionalLight('#dce5ff',1.1);fill.position.set(2,2,5);scene.add(fill);
+  const material=(color,roughness=.6,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
+  const gold=material('#d6ab69',.22,.82),ivory=material('#fff6e9',.58),rose=material('#d590a5',.4),leaf=material('#46744b',.6);
+  const berryMat=new THREE.MeshPhysicalMaterial({color:'#b82740',roughness:.32,clearcoat:.45});
+  const cherryMat=new THREE.MeshPhysicalMaterial({color:'#820d29',roughness:.2,clearcoat:.7});
+  const chocolate=material('#3d2020',.35),seedMat=material('#edc57e',.5),wick=material('#35212b',1);
+  const porcelain=new THREE.MeshPhysicalMaterial({color:'#f2e0d4',roughness:.25,clearcoat:.6});
+  const sphere=new THREE.SphereGeometry(1,16,12),dummy=new THREE.Object3D();
+  const topColor=new THREE.Color('#f5a9bd');let targetColor=topColor.clone();
+  const cakeMat=material('#f5a9bd',.72),glaze=new THREE.MeshPhysicalMaterial({color:'#fff6e9',roughness:.32,clearcoat:.35,side:THREE.DoubleSide});
+  function mesh(g,m,parent,x=0,y=0,z=0){const v=new THREE.Mesh(g,m);v.position.set(x,y,z);v.castShadow=true;v.receiveShadow=true;parent.add(v);return v;}
+  function orb(parent,m,x,y,z,sx,sy=sx,sz=sx){const v=mesh(sphere,m,parent,x,y,z);v.scale.set(sx,sy,sz);return v;}
+  function ring(parent,r,t,y,m=gold){const v=mesh(new THREE.TorusGeometry(r,t,10,96),m,parent,0,y,0);v.rotation.x=Math.PI/2;return v;}
+  function lathe(parent,profile,m,y=0){return mesh(new THREE.LatheGeometry(profile.map(p=>new THREE.Vector2(...p)),80),m,parent,0,y,0);}
+  function batch(parent,g,m,transforms){const b=new THREE.InstancedMesh(g,m,transforms.length);transforms.forEach((t,i)=>{dummy.position.set(...t.p);dummy.rotation.set(...(t.r||[0,0,0]));dummy.scale.set(...(t.s||[1,1,1]));dummy.updateMatrix();b.setMatrixAt(i,dummy.matrix);});b.castShadow=true;b.receiveShadow=true;parent.add(b);return b;}
+  function tube(parent,points,r,m){return mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p))),Math.max(16,points.length*3),r,7,false),m,parent);}
+  // Shared sculpted six-ridge cream tip, used for both borders and individual toppings.
+  const vertices=[],indices=[];
+  for(let row=0;row<=16;row++)for(let j=0;j<=30;j++){
+    const t=row/16,a=j/30*Math.PI*2,r=Math.pow(Math.sin(Math.PI*t),.65)*.115*(1-t*.3)*(1+.18*Math.cos(6*a-t*4));
+    vertices.push(Math.cos(a)*r+t*t*.03,t*.23,Math.sin(a)*r);
+    if(row<16&&j<30){const k=row*31+j;indices.push(k,k+31,k+1,k+1,k+31,k+32);}
   }
-  function ring(radius,tube,y,material,parent=model) {
-    const item=mesh(new THREE.TorusGeometry(radius,tube,10,100),material,parent,0,y,0); item.rotation.x=Math.PI/2; return item;
-  }
-  function lathe(profile,material,y=0,parent=model) {
-    return mesh(new THREE.LatheGeometry(profile.map(p=>new THREE.Vector2(...p)),80),material,parent,0,y,0);
-  }
-  function instances(geometry,material,transforms,parent=model) {
-    const batch=new THREE.InstancedMesh(geometry,material,transforms.length);
-    transforms.forEach((t,i)=>{dummy.position.set(...t.p);dummy.rotation.set(...(t.r||[0,0,0]));dummy.scale.set(...(t.s||[1,1,1]));dummy.updateMatrix();batch.setMatrixAt(i,dummy.matrix);});
-    batch.castShadow=true;batch.receiveShadow=true;parent.add(batch);return batch;
-  }
-  // A turned porcelain pedestal, with a rolled gold rim and a scalloped cake board.
-  lathe([[0,-.36],[.5,-.36],[.58,-.31],[.55,-.25],[.28,-.20],[.20,-.1],[.20,.06],[.28,.14],[1.72,.20],[1.85,.25],[1.85,.30],[1.78,.33],[0,.33]],porcelain);
-  ring(1.83,.018,.30,gold); ring(.54,.013,-.30,gold);
-  mesh(new THREE.CylinderGeometry(1.59,1.59,.05,100),gold,model,0,.35,0);
-  function tier(radius,bottom,height,material) {
-    lathe([[0,0],[radius-.06,0],[radius,.04],[radius,height-.055],[radius-.025,height],[0,height]],material,bottom);
-  }
-  tier(1.40,.38,1.02,vanilla); tier(.98,1.44,.73,blush);
-  const flutes=[];
-  for(let i=0;i<88;i++){const a=i/88*Math.PI*2;flutes.push({p:[Math.cos(a)*1.391,.88,Math.sin(a)*1.391],s:[.027,.405,.027]});}
-  instances(sphere,rose,flutes);
-  ring(1.405,.018,.46,gold); ring(1.005,.012,1.56,gold);
-  function frosting(radius,top,depth,frequency) {
-    mesh(new THREE.CylinderGeometry(radius,radius,.065,96),glaze,model,0,top+.01,0);
-    const positions=[],indices=[];
-    const n=192;
-    for(let i=0;i<=n;i++){
-      const a=i/n*Math.PI*2;
-      const drip=.045+depth*Math.pow((Math.cos(a*frequency)+1)/2,3)*( .75+.25*Math.cos(a*3));
-      for(let j=0;j<3;j++){
-        const r=radius+(j===2?-.008:.007);
-        positions.push(Math.cos(a)*r,top+.02-j/2*drip,Math.sin(a)*r);
-      }
-      if(i<n){const k=i*3;indices.push(k,k+3,k+1,k+1,k+3,k+4,k+1,k+4,k+2,k+2,k+4,k+5);}
-    }
-    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();
-    const coating=glaze.clone();coating.side=THREE.DoubleSide;mesh(g,coating);
-  }
-  frosting(1.42,1.42,.25,18); frosting(1.002,2.19,.21,13);
-  // Twisted six-point piping geometry, instanced around the borders.
-  const pipedPositions=[],pipedIndices=[];
-  for(let row=0;row<=18;row++){
-    const t=row/18;
-    for(let j=0;j<=36;j++){
-      const a=j/36*Math.PI*2;
-      const r=Math.pow(Math.sin(Math.PI*t),.65)*.112*(1-t*.3)*(1+.18*Math.cos(6*a-t*4));
-      pipedPositions.push(Math.cos(a)*r+t*t*.028,t*.22,Math.sin(a)*r);
-      if(row<18&&j<36){const k=row*37+j;pipedIndices.push(k,k+37,k+1,k+1,k+37,k+38);}
-    }
-  }
-  const pipeGeo=new THREE.BufferGeometry();pipeGeo.setAttribute('position',new THREE.Float32BufferAttribute(pipedPositions,3));pipeGeo.setIndex(pipedIndices);pipeGeo.computeVertexNormals();
-  const pipes=[];
-  for(const [r,y,n,s] of [[1.36,.39,44,.85],[1.28,1.455,32,1],[.89,2.225,22,.78]])for(let i=0;i<n;i++){const a=i/n*Math.PI*2;pipes.push({p:[Math.cos(a)*r,y,Math.sin(a)*r],r:[0,-a,0],s:[s,s,s]});}
-  instances(pipeGeo,ivory,pipes);
-  const pearls=[];
-  for(let i=0;i<70;i++){const a=i/70*Math.PI*2;pearls.push({p:[Math.cos(a)*1.46,.39,Math.sin(a)*1.46],s:[.028,.028,.028]});}
-  instances(sphere,gold,pearls);
-  // Sculpted berries, leafy crowns, and individually placed seeds.
-  const berryProfile=[[0,0],[.055,.03],[.11,.08],[.155,.16],[.17,.22],[.145,.29],[.065,.335],[0,.34]];
-  const berryGeometry=new THREE.LatheGeometry(berryProfile.map(p=>new THREE.Vector2(...p)),24);
+  const pipeGeo=new THREE.BufferGeometry();pipeGeo.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));pipeGeo.setIndex(indices);pipeGeo.computeVertexNormals();
+  const berryGeo=new THREE.LatheGeometry([[0,0],[.055,.03],[.11,.08],[.155,.16],[.17,.22],[.145,.29],[.065,.335],[0,.34]].map(p=>new THREE.Vector2(...p)),24);
   const seedTransforms=[],leafTransforms=[];
-  const berries=[[-.71,1.47,.87],[.78,1.47,.86],[1.13,1.47,-.28],[-1.12,1.47,-.34],[.60,2.235,-.13],[-.59,2.235,-.16],[0,2.235,.70]];
-  berries.forEach(([x,y,z],index)=>{
-    mesh(berryGeometry,berryMat,model,x,y,z);
-    for(let row=0;row<6;row++){
-      const yy=.07+row*.043,rr=yy<.21?.1+(yy-.07)*.5:.17-(yy-.21)*.55;
-      const n=9+row%2;
-      for(let k=0;k<n;k++){const a=k/n*Math.PI*2+row*.37;seedTransforms.push({p:[x+Math.cos(a)*(rr+.005),y+yy,z+Math.sin(a)*(rr+.005)],r:[0,-a+Math.PI/2,.15],s:[.008,.014,.007]});}
+  for(let row=0;row<6;row++){const y=.07+row*.043,r=y<.21?.1+(y-.07)*.5:.17-(y-.21)*.55;for(let k=0;k<10;k++){const a=k/10*Math.PI*2+row*.37;seedTransforms.push({p:[Math.cos(a)*(r+.005),y,Math.sin(a)*(r+.005)],r:[0,-a+Math.PI/2,.15],s:[.008,.014,.007]});}}
+  for(let k=0;k<5;k++){const a=k/5*Math.PI*2;leafTransforms.push({p:[Math.cos(a)*.055,.335,Math.sin(a)*.055],r:[0,-a,.12],s:[.085,.012,.035]});}
+  const templates=new Map(),toppingData=[['strawberry','🍓','สตรอว์เบอร์รี'],['cherry','🍒','เชอร์รี'],['cream','🧁','วิปครีม'],['flower','🌸','ดอกน้ำตาล'],['bow','🎀','โบว์'],['chocolate','🍫','ช็อกโกแลต'],['candle','🕯️','เทียน'],['sprinkles','✨','ไข่มุกทอง']];
+  function template(type){
+    if(templates.has(type))return templates.get(type);
+    const g=new THREE.Group();
+    if(type==='strawberry'){mesh(berryGeo,berryMat,g);batch(g,sphere,seedMat,seedTransforms);batch(g,sphere,leaf,leafTransforms);}
+    if(type==='cream'){mesh(pipeGeo,ivory,g).scale.setScalar(1.55);orb(g,gold,.02,.33,0,.022);}
+    if(type==='cherry'){
+      orb(g,cherryMat,-.07,.115,0,.115);orb(g,cherryMat,.09,.11,.045,.11);
+      tube(g,[[-.07,.2,0],[-.04,.38,.01],[.02,.45,0]],.012,leaf);tube(g,[[.09,.19,.04],[.08,.35,.01],[.02,.45,0]],.01,leaf);orb(g,leaf,.075,.40,0,.07,.013,.027);
     }
-    for(let k=0;k<5;k++){const a=k/5*Math.PI*2+index;leafTransforms.push({p:[x+Math.cos(a)*.055,y+.335,z+Math.sin(a)*.055],r:[0,-a,Math.cos(a)*.15],s:[.085,.012,.035]});}
-  });
-  instances(sphere,seedMat,seedTransforms); instances(sphere,leaf,leafTransforms);
-  // Delicate sugar daisies arranged on the ledge.
-  const petals=[],centres=[];
-  [[.13,1.48,1.17],[-.95,1.48,.65],[.91,1.48,-.74],[-.47,2.23,.49]].forEach(([x,y,z])=>{
-    for(let k=0;k<7;k++){const a=k/7*Math.PI*2;petals.push({p:[x+Math.cos(a)*.08,y+.015,z+Math.sin(a)*.08],r:[0,-a,0],s:[.08,.022,.038]});}
-    centres.push({p:[x,y+.035,z],s:[.035,.025,.035]});
-  });
-  instances(sphere,ivory,petals);instances(sphere,gold,centres);
-  // The gold birthday hoop and double-sided calligraphic plaque.
-  const hoop=mesh(new THREE.TorusGeometry(.53,.013,10,100),gold,model,0,3.03,-.45);
-  for(const x of [-.34,.34])mesh(new THREE.CylinderGeometry(.009,.009,.75,8),gold,model,x,2.53,-.45);
-  const labelCanvas=document.createElement('canvas');labelCanvas.width=1024;labelCanvas.height=512;
-  const labelTexture=new THREE.CanvasTexture(labelCanvas);labelTexture.colorSpace=THREE.SRGBColorSpace;
-  function drawLabel(){const ctx=labelCanvas.getContext('2d');ctx.clearRect(0,0,1024,512);ctx.textAlign='center';ctx.fillStyle='#d6aa66';ctx.font='38px Georgia';ctx.fillText('H A P P Y  B I R T H D A Y',512,145);ctx.font='170px Pacifico, cursive';ctx.fillText('Mel',512,330);ctx.font='32px Georgia';ctx.fillText('WITH LOVE',512,422);labelTexture.needsUpdate=true;}
-  drawLabel();document.fonts.ready.then(drawLabel);
-  const label=mesh(new THREE.PlaneGeometry(1.25,.625),new THREE.MeshBasicMaterial({map:labelTexture,transparent:true,side:THREE.DoubleSide,depthWrite:false}),model,0,3.05,-.43);label.castShadow=false;
-  // Candles are coupled to the original quiz/letter flow through the DOM state.
-  const candles=[],hits=[];
-  const candlePlaces=[[-.4,.23],[0,-.02],[.4,.23]];
-  const waxMaterials=[mat('#cc738e',.36),mat('#f1d3a9',.4),mat('#cc738e',.36)];
-  candlePlaces.forEach(([x,z],index)=>{
-    const group=new THREE.Group();group.position.set(x,2.25,z);model.add(group);
-    const wax=mesh(new THREE.CylinderGeometry(.047,.047,.48,18),waxMaterials[index],group,0,.24,0);
-    const spiral=[];for(let i=0;i<=100;i++){const a=i/100*Math.PI*2*4;spiral.push(new THREE.Vector3(Math.cos(a)*.048,.03+i/100*.42,Math.sin(a)*.048));}
-    mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(spiral),90,.007,5,false),gold,group);
-    mesh(new THREE.CylinderGeometry(.007,.007,.05,8),wickMat,group,0,.505,0);
-    const flameShape=new THREE.LatheGeometry([[0,-1],[.65,-.85],[1,-.45],[.78,.2],[.38,.65],[0,1.5]].map(p=>new THREE.Vector2(...p)),20);
-    const flame=mesh(flameShape,new THREE.MeshBasicMaterial({color:'#ffb238',transparent:true,opacity:.9}),group,0,.61,0);flame.scale.set(.044,.11,.044);flame.castShadow=false;
-    const core=mesh(sphere,new THREE.MeshBasicMaterial({color:'#fff8d2'}),group,0,.58,.018);core.scale.set(.022,.052,.022);core.castShadow=false;
-    const light=new THREE.PointLight(0xffa24a,0,2.5,2);light.position.set(0,.65,0);group.add(light);
-    const target=mesh(new THREE.CylinderGeometry(.16,.15,.8,12),new THREE.MeshBasicMaterial({visible:false}),group,0,.38,0);target.userData.candle=index;hits.push(target);
-    candles.push({group,flame,core,light,wasOut:false});
-  });
-  // Floating steam wisps are local geometry, never an external texture request.
-  const smoke=[];
-  function emitSmoke(index){for(let i=0;i<5;i++){const m=mesh(sphere,new THREE.MeshBasicMaterial({color:'#ddd2d4',transparent:true,opacity:.25,depthWrite:false}),model,...[candlePlaces[index][0],2.84,candlePlaces[index][1]]);m.castShadow=false;m.scale.setScalar(.02);smoke.push({mesh:m,age:-i*.1,seed:i});}}
-  const ground=mesh(new THREE.PlaneGeometry(200,200),new THREE.ShadowMaterial({opacity:.17}),scene,0,-.38,0);ground.rotation.x=-Math.PI/2;ground.castShadow=false;
-  // Soft contact shadow complements the real directional shadow on lower-powered devices.
+    if(type==='flower'){
+      for(let layer=0;layer<2;layer++)for(let i=0;i<7;i++){const a=i/7*Math.PI*2+layer*.4;const p=orb(g,layer?ivory:rose,Math.cos(a)*(.1-layer*.025),.025+layer*.025,Math.sin(a)*(.1-layer*.025),.1-layer*.018,.025,.047);p.rotation.y=-a;}
+      orb(g,gold,0,.08,0,.043,.027,.043);
+    }
+    if(type==='bow'){
+      for(const side of [-1,1]){
+        const curve=[];for(let i=0;i<=24;i++){const a=i/24*Math.PI*2;curve.push([side*(.11-.1*Math.cos(a)),.11+Math.sin(a)*.08,Math.sin(a)*.035]);}
+        tube(g,curve,.025,rose);tube(g,[[0,.11,0],[side*.06,.045,.06],[side*.09,.005,.16]],.028,rose);
+      }orb(g,gold,0,.11,0,.04,.045,.03);
+    }
+    if(type==='chocolate'){
+      const slab=mesh(new THREE.BoxGeometry(.27,.055,.34),chocolate,g,0,.05,0);slab.rotation.z=.12;
+      for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)mesh(new THREE.BoxGeometry(.072,.025,.09),chocolate,g,x*.082,.09,z*.102);
+      tube(g,[[-.1,.12,-.15],[-.02,.12,-.03],[.08,.12,.15]],.008,gold);
+    }
+    if(type==='sprinkles'){
+      const colors=[gold,rose,ivory];for(let i=0;i<9;i++){const a=i*2.4,r=.035+Math.sqrt(i)*.035;orb(g,colors[i%3],Math.cos(a)*r,.025,Math.sin(a)*r,.021);}
+    }
+    if(type==='candle'){
+      mesh(new THREE.CylinderGeometry(.045,.045,.48,18),rose,g,0,.24,0);
+      const spiral=[];for(let i=0;i<=80;i++){const a=i/80*Math.PI*8;spiral.push([Math.cos(a)*.047,.03+i/80*.42,Math.sin(a)*.047]);}tube(g,spiral,.006,gold);
+      mesh(new THREE.CylinderGeometry(.006,.006,.05,8),wick,g,0,.505,0);
+      const flame=orb(g,new THREE.MeshBasicMaterial({color:'#ffb34d'}),0,.59,0,.043,.1,.043);flame.name='flame';flame.castShadow=false;
+      const core=orb(g,new THREE.MeshBasicMaterial({color:'#fff6cb'}),0,.57,.015,.022,.05,.022);core.name='core';core.castShadow=false;
+    }
+    templates.set(type,g);return g;
+  }
+  // Serialized cake state is independent of render meshes, so undo restores complete edits.
+  const layout=count=>Array.from({length:count},(_,i)=>({r:1.4-i*.38,b:.38+i*.86,h:.82}));
+  let nextID=0;
+  const record=(type,p,extra={})=>({id:++nextID,type,p,n:[0,1,0],scale:1,angle:0,lit:true,...extra});
+  function initial(){return {size:2,flavor:'#f5a9bd',frosting:'drip',frostColor:'#fff6e9',items:[
+    ...[-.43,0,.43].map(x=>record('candle',[x,2.08,.05])),
+    ...Array.from({length:5},(_,i)=>{const a=i/5*Math.PI*2;return record('strawberry',[Math.cos(a)*.76,2.08,Math.sin(a)*.76],{angle:i*45});}),
+    ...Array.from({length:7},(_,i)=>{const a=i/7*Math.PI*2;return record(i%2?'flower':'strawberry',[Math.cos(a)*1.22,1.22,Math.sin(a)*1.22],{scale:.9,angle:i*40});}),
+    record('bow',[0,.73,1.415],{n:[0,0,1],scale:1.8})],strokes:[]};}
+  let cake=initial(),history=[],selectedID=null,tool='orbit',selectedType='strawberry',gala=false;
+  let surfaces=[],bodyMaterials=[],itemMeshes=new Map(),labelTexture=null;
+  const sound=()=>document.dispatchEvent(new Event('cake-sound'));
+  const status=text=>{$('decorator-status').textContent=text;};
+  const copy=v=>JSON.parse(JSON.stringify(v));
+  function remember(){history.push(copy(cake));if(history.length>40)history.shift();}
+  // Only dispose geometry owned by a rebuilt group, never the shared topping templates.
+  function clearGroup(group){const geometries=new Set();group.traverse(o=>{if(o.isInstancedMesh)o.dispose();if(o.geometry&&o.geometry!==sphere&&o.geometry!==pipeGeo)geometries.add(o.geometry);});group.clear();geometries.forEach(g=>g.dispose());}
+  function buildBase(){
+    clearGroup(base);bodyMaterials.forEach(m=>m.dispose());bodyMaterials=[];surfaces=[];labelTexture?.dispose();
+    glaze.color.set(cake.frostColor);targetColor.set(cake.flavor);
+    lathe(base,[[0,-.36],[.5,-.36],[.58,-.31],[.55,-.25],[.28,-.2],[.20,-.1],[.20,.06],[.28,.14],[1.72,.20],[1.85,.25],[1.85,.30],[1.78,.33],[0,.33]],porcelain);
+    ring(base,1.83,.018,.30);ring(base,.54,.013,-.3);mesh(new THREE.CylinderGeometry(1.59,1.59,.05,96),gold,base,0,.35,0);
+    for(const [i,t] of layout(cake.size).entries()){
+      const top=t.b+t.h;
+      const body=lathe(base,[[0,0],[t.r-.04,0],[t.r,.04],[t.r,t.h-.04],[t.r-.02,t.h],[0,t.h]],cakeMat,t.b);surfaces.push(body);
+      const flutes=[];for(let k=0;k<72-i*12;k++){const a=k/(72-i*12)*Math.PI*2;flutes.push({p:[Math.cos(a)*(t.r-.003),t.b+t.h/2,Math.sin(a)*(t.r-.003)],s:[.021,t.h*.39,.021]});}batch(base,sphere,rose,flutes);
+      ring(base,t.r+.006,.012,t.b+.095);ring(base,t.r+.006,.012,t.b+.18);
+      if(cake.frosting!=='none'){
+        const topMesh=mesh(new THREE.CylinderGeometry(t.r+.016,t.r+.016,.05,80),glaze,base,0,top+.012,0);surfaces.push(topMesh);
+        if(cake.frosting==='drip'){
+          const p=[],ind=[],n=144;for(let j=0;j<=n;j++){const a=j/n*Math.PI*2,d=.045+.21*Math.pow((Math.cos(a*(18-i*4))+1)/2,3);for(let k=0;k<2;k++)p.push(Math.cos(a)*(t.r+.02),top+.015-k*d,Math.sin(a)*(t.r+.02));if(j<n){const k=j*2;ind.push(k,k+2,k+1,k+1,k+2,k+3);}}
+          const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));geo.setIndex(ind);geo.computeVertexNormals();mesh(geo,glaze,base);
+        }
+        if(cake.frosting!=='smooth'){
+          const pipes=[];for(const [r,y,n,s] of [[t.r-.01,t.b+.015,44-i*10,.78],[t.r-.07,top+.045,36-i*8,.76]])for(let j=0;j<n;j++){const a=j/n*Math.PI*2;pipes.push({p:[Math.cos(a)*r,y,Math.sin(a)*r],r:[0,-a,0],s:[s,s,s]});}batch(base,pipeGeo,glaze,pipes);
+        }
+      }
+      const pearls=[];for(let k=0;k<54;k++){const a=k/54*Math.PI*2;pearls.push({p:[Math.cos(a)*(t.r+.035),t.b+.015,Math.sin(a)*(t.r+.035)],s:[.024,.024,.024]});}batch(base,sphere,gold,pearls);
+    }
+    const top=layout(cake.size).at(-1).b+.82;
+    const hoop=mesh(new THREE.TorusGeometry(.53,.014,10,100),gold,base,0,top+.85,-.37);
+    for(const x of [-.34,.34])mesh(new THREE.CylinderGeometry(.009,.009,.65,8),gold,base,x,top+.32,-.37);
+    const label=document.createElement('canvas');label.width=1024;label.height=512;const c=label.getContext('2d');
+    c.textAlign='center';c.fillStyle='#d3a65e';c.font='36px Georgia';c.fillText('H A P P Y  B I R T H D A Y',512,155);c.font='170px Pacifico, cursive';c.fillText('Mel',512,335);c.font='28px Georgia';c.fillText('A LITTLE MAGIC, JUST FOR YOU',512,422);
+    labelTexture=new THREE.CanvasTexture(label);labelTexture.colorSpace=THREE.SRGBColorSpace;
+    const labelMat=new THREE.MeshBasicMaterial({map:labelTexture,transparent:true,side:THREE.DoubleSide,depthWrite:false});bodyMaterials.push(labelMat);
+    mesh(new THREE.PlaneGeometry(1.2,.6),labelMat,base,0,top+.85,-.35).castShadow=false;
+    // Small stars crown the gold hoop, rather than using flat emoji sprites.
+    for(const [x,y,s] of [[-.48,top+1.25,.07],[.43,top+1.26,.095],[.1,top+1.47,.055]]){
+      const shape=new THREE.Shape();for(let k=0;k<10;k++){const a=k/10*Math.PI*2+Math.PI/2,r=k%2?s*.42:s;if(!k)shape.moveTo(Math.cos(a)*r,Math.sin(a)*r);else shape.lineTo(Math.cos(a)*r,Math.sin(a)*r);}shape.closePath();mesh(new THREE.ExtrudeGeometry(shape,{depth:.018,bevelEnabled:false}),gold,base,x,y,-.37);
+    }
+  }
+  const placementRing=ring(model,.19,.008,0,new THREE.MeshBasicMaterial({color:'#e9b365',transparent:true,opacity:.8,depthTest:false}));placementRing.visible=false;placementRing.renderOrder=8;placementRing.castShadow=false;
+  const selectionRing=ring(model,.22,.009,0,new THREE.MeshBasicMaterial({color:'#f5c871',transparent:true,opacity:.85}));selectionRing.visible=false;selectionRing.castShadow=false;
+  function buildArt(){
+    // Mesh clones share cached geometries and materials; rebuilding never allocates
+    // a second copy of strawberry seeds or leaves for every undo operation.
+    art.traverse(o=>{if(o.isInstancedMesh)o.dispose();if(o.userData.owned){o.geometry?.dispose();o.material?.map?.dispose();o.material?.dispose();}});art.clear();itemMeshes.clear();
+    for(const item of cake.items){
+      const anchor=new THREE.Group(),g=new THREE.Group();anchor.position.fromArray(item.p);anchor.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(...item.n));g.rotation.y=THREE.MathUtils.degToRad(item.angle);g.scale.setScalar(item.scale);anchor.add(g);anchor.userData.itemID=item.id;art.add(anchor);
+      if(item.type==='text'){
+        const c=document.createElement('canvas');c.width=1024;c.height=256;const context=c.getContext('2d');context.fillStyle=item.color;context.textAlign='center';context.font='bold 70px sans-serif';context.fillText(item.text,512,155,960);
+        const texture=new THREE.CanvasTexture(c);texture.colorSpace=THREE.SRGBColorSpace;
+        const m=mesh(new THREE.PlaneGeometry(1.2,.3),new THREE.MeshBasicMaterial({map:texture,transparent:true,side:THREE.DoubleSide,depthWrite:false}),g,0,.017,0);m.rotation.x=-Math.PI/2;m.userData.owned=true;m.castShadow=false;
+      }else g.add(template(item.type).clone(true));
+      anchor.traverse(o=>{if(o.name==='flame'||o.name==='core')o.visible=item.lit;});itemMeshes.set(item.id,anchor);
+    }
+    for(const stroke of cake.strokes){
+      if(!stroke.points.length)continue;const m=material(stroke.color,.48);
+      if(stroke.points.length===1){const dot=mesh(new THREE.SphereGeometry(stroke.width,10,8),m,art,...stroke.points[0]);dot.userData.owned=true;}
+      else {const line=tube(art,stroke.points,stroke.width,m);line.userData.owned=true;}
+    }
+    sync();
+  }
+  function sync(){
+    $('cake-flavor').value=cake.flavor;$('cake-size').value=cake.size;$('cake-frosting').value=cake.frosting;$('cake-frost-color').value=cake.frostColor;$('cake-undo').disabled=!history.length;
+    canvas.dataset.items=cake.items.length;canvas.dataset.strokes=cake.strokes.length;canvas.dataset.lit=cake.items.filter(i=>i.type==='candle'&&i.lit).length;canvas.dataset.selected=selectedID||'';
+    const item=cake.items.find(i=>i.id===selectedID);$('cake-selection').hidden=!item;selectionRing.visible=!!item;
+    if(item){$('cake-selected-name').textContent='กำลังแก้ไข: '+(toppingData.find(t=>t[0]===item.type)?.[2]||'ข้อความ');$('cake-item-scale').value=item.scale;$('cake-item-angle').value=item.angle;selectionRing.position.fromArray(item.p);selectionRing.quaternion.copy(itemMeshes.get(item.id).quaternion).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),Math.PI/2));selectionRing.scale.setScalar(item.scale);}
+  }
+  function changed(message,rebuildBase=false){if(rebuildBase)buildBase();buildArt();sound();if(message)status(message);}
+  // Porcelain pedestal contact shadow and subtle floating gold dust.
   const shadowCanvas=document.createElement('canvas');shadowCanvas.width=128;shadowCanvas.height=128;
-  const ctx=shadowCanvas.getContext('2d'),gradient=ctx.createRadialGradient(64,64,10,64,64,62);gradient.addColorStop(0,'rgba(35,12,20,.35)');gradient.addColorStop(1,'rgba(35,12,20,0)');ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
-  const shadow=mesh(new THREE.PlaneGeometry(4.5,4.5),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(shadowCanvas),transparent:true,depthWrite:false}),scene,0,-.37,0);shadow.rotation.x=-Math.PI/2;shadow.castShadow=false;
-
-  let yaw=.18,targetYaw=.18,elevation=.29,targetElevation=.29,zoom=1,auto=!reduced.matches,frame=0,last=0,inView=true;
-  let press=null,dragging=false,spinVelocity=0,darkBlend=0,failed=false;
-  const pointers=new Map(); let pinchDistance=0;
-  const autoButton=document.getElementById('cake-auto');
-  function setAuto(value){auto=value;autoButton.setAttribute('aria-pressed',String(value));autoButton.textContent=value?'Ⅱ หยุดหมุน':'▶ หมุนช้าๆ';}
-  setAuto(auto);
-  const cameraTarget=new THREE.Vector3(0,1.57,0);
-  function resize(){const r=viewport.getBoundingClientRect();if(!r.width||!r.height)return;renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();}
-  function syncCandles(){candles.forEach((c,i)=>{const lit=candleNodes[i].classList.contains('lit')&&!candleNodes[i].classList.contains('out');const out=candleNodes[i].classList.contains('out');c.flame.visible=c.core.visible=lit;c.light.intensity=lit?.65:0;if(out&&!c.wasOut)emitSmoke(i);c.wasOut=out;});}
-  new MutationObserver(syncCandles).observe(document.querySelector('.candle-row'),{subtree:true,attributes:true,attributeFilter:['class']});syncCandles();
+  const sc=shadowCanvas.getContext('2d'),gradient=sc.createRadialGradient(64,64,8,64,64,62);gradient.addColorStop(0,'rgba(62,30,30,.32)');gradient.addColorStop(1,'rgba(62,30,30,0)');sc.fillStyle=gradient;sc.fillRect(0,0,128,128);
+  const ground=mesh(new THREE.PlaneGeometry(5,5),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(shadowCanvas),transparent:true,depthWrite:false}),scene,0,-.37,0);ground.rotation.x=-Math.PI/2;ground.castShadow=false;
+  const dustPositions=[];for(let i=0;i<70;i++){const a=i*2.399,r=2.1+(i%7)*.09;dustPositions.push(Math.cos(a)*r,.1+(i%19)*.18,Math.sin(a)*r);}
+  const dustGeometry=new THREE.BufferGeometry();dustGeometry.setAttribute('position',new THREE.Float32BufferAttribute(dustPositions,3));
+  const dust=new THREE.Points(dustGeometry,new THREE.PointsMaterial({color:'#e8c08d',size:.018,transparent:true,opacity:.55,depthWrite:false}));scene.add(dust);
+  let yaw=.18,targetYaw=.18,elevation=.38,targetElevation=.38,zoom=1,auto=!reduced.matches,frame=0,last=0,visible=true,lost=false;
+  const cameraTarget=new THREE.Vector3();
+  function setAuto(value){auto=value;$('cake-auto').setAttribute('aria-pressed',String(value));$('cake-auto').textContent=value?'Ⅱ หยุดหมุน':'▶ หมุนโชว์';}
+  function setTool(value){tool=value;placementRing.visible=false;setAuto(false);$('cake-orbit').setAttribute('aria-pressed',String(value==='orbit'));canvas.dataset.tool=value;document.querySelectorAll('[data-topping]').forEach(b=>b.setAttribute('aria-pressed',String(value==='place'&&b.dataset.topping===selectedType)));}
+  function updateCamera(){const center=1.45+(cake.size-2)*.4,distance=(7.8+(cake.size-2)*1.2)*Math.max(1,.88/camera.aspect)/zoom;cameraTarget.set(0,center,0);camera.position.set(0,center+Math.sin(elevation)*distance,Math.cos(elevation)*distance);camera.lookAt(cameraTarget);camera.updateMatrixWorld();model.rotation.y=yaw;model.updateMatrixWorld(true);}
+  function resize(){const r=canvas.getBoundingClientRect();if(!r.width||!r.height)return;renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();updateCamera();}
   function render(time){
-    frame=0;if(failed||document.hidden||!screen.classList.contains('active')||!inView){last=0;return;}
+    frame=0;if(document.hidden||!screen.classList.contains('active')||!visible||lost){last=0;return;}
     const dt=Math.min((time-(last||time))/1000,.05);last=time;
-    if(auto&&!dragging)targetYaw+=dt*.12;
-    if(!dragging&&!reduced.matches){targetYaw+=spinVelocity*dt;spinVelocity*=Math.exp(-dt*6);}
-    const smoothing=reduced.matches?1:1-Math.exp(-dt*10);
-    yaw+=(targetYaw-yaw)*smoothing;elevation+=(targetElevation-elevation)*smoothing;
-    model.rotation.y=yaw;
-    const narrow=Math.max(1,.88/camera.aspect),distance=7.8*narrow/zoom;
-    camera.position.set(0,1.57+Math.sin(elevation)*distance,Math.cos(elevation)*distance);camera.lookAt(cameraTarget);
-    darkBlend+=((document.body.classList.contains('lights-off')?1:0)-darkBlend)*(1-Math.exp(-dt*2));
-    ambient.intensity=1.5-darkBlend*.45;key.intensity=3.2-darkBlend*.85;fill.intensity=.9-darkBlend*.25;scene.environmentIntensity=.65-darkBlend*.2;
-    candles.forEach((c,i)=>{if(c.flame.visible){const f=reduced.matches?1:1+Math.sin(time*.009+i*3)*.09;c.flame.scale.set(.044*f,.11/f,.044*f);c.light.intensity=.65*f;}});
-    for(let i=smoke.length-1;i>=0;i--){const s=smoke[i];s.age+=dt;if(s.age<0)continue;s.mesh.position.y+=dt*.24;s.mesh.position.x+=Math.sin(s.age*5+s.seed)*dt*.04;s.mesh.scale.setScalar(.025+s.age*.07);s.mesh.material.opacity=Math.max(0,.25-s.age*.15);if(s.age>1.7){model.remove(s.mesh);s.mesh.material.dispose();smoke.splice(i,1);}}
-    renderer.render(scene,camera);
-    viewport.dataset.yaw=yaw.toFixed(3);viewport.dataset.lit=String(candles.filter(c=>c.flame.visible).length);
-    frame=requestAnimationFrame(render);
-  }
-  function resume(){if(!failed&&!frame&&!document.hidden&&screen.classList.contains('active')&&inView)frame=requestAnimationFrame(render);}
-  function halt(){cancelAnimationFrame(frame);frame=0;last=0;}
-  function reconcile(){if(document.hidden||!screen.classList.contains('active')||!inView)halt();else resume();}
-  new MutationObserver(reconcile).observe(screen,{attributes:true,attributeFilter:['class']});
-  document.addEventListener('visibilitychange',reconcile);
-  new IntersectionObserver(entries=>{inView=entries[0].isIntersecting;reconcile();}).observe(viewport);
-  new ResizeObserver(resize).observe(viewport);
-  reduced.addEventListener('change',()=>{setAuto(false);spinVelocity=0;});
-  function begin(event){if(event.button!==0)return;pointers.set(event.pointerId,{x:event.clientX,y:event.clientY});viewport.setPointerCapture(event.pointerId);setAuto(false);spinVelocity=0;
-    if(pointers.size===1){press={x:event.clientX,y:event.clientY,lastX:event.clientX,lastY:event.clientY,time:performance.now()};dragging=true;}
-    else{const p=[...pointers.values()];pinchDistance=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);press=null;}}
-  viewport.addEventListener('pointerdown',begin);
-  viewport.addEventListener('pointermove',event=>{
-    if(!pointers.has(event.pointerId))return;pointers.set(event.pointerId,{x:event.clientX,y:event.clientY});
-    if(pointers.size===2){const p=[...pointers.values()],d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);if(pinchDistance)zoom=THREE.MathUtils.clamp(zoom*d/pinchDistance,.85,1.3);pinchDistance=d;document.getElementById('cake-zoom').value=zoom;return;}
-    if(!press)return;const dx=event.clientX-press.lastX,dy=event.clientY-press.lastY;
-    targetYaw+=dx*.009;targetElevation=THREE.MathUtils.clamp(targetElevation+dy*.005,.04,.85);
-    spinVelocity=dx*.09;press.lastX=event.clientX;press.lastY=event.clientY;
-  });
-  const raycaster=new THREE.Raycaster();
-  function finish(event,cancelled=false){
-    if(press&&!cancelled&&Math.hypot(event.clientX-press.x,event.clientY-press.y)<7&&performance.now()-press.time<600){
-      const r=viewport.getBoundingClientRect();raycaster.setFromCamera(new THREE.Vector2((event.clientX-r.left)/r.width*2-1,-(event.clientY-r.top)/r.height*2+1),camera);
-      const hit=raycaster.intersectObjects(hits)[0];if(hit)candleNodes[hit.object.userData.candle].click();
+    if(auto&&!pointers.size)targetYaw+=dt*.13;
+    const speed=reduced.matches?1:1-Math.exp(-dt*12);yaw+=(targetYaw-yaw)*speed;elevation+=(targetElevation-elevation)*speed;
+    cakeMat.color.lerp(targetColor,reduced.matches?1:1-Math.exp(-dt*7));updateCamera();
+    dust.rotation.y=reduced.matches?0:time*.000025;dust.material.opacity=gala?.8:.45;
+    for(const item of cake.items){const anchor=itemMeshes.get(item.id);if(!anchor)continue;
+      const progress=reduced.matches?1:THREE.MathUtils.clamp((time-(item.born||0))/500,0,1);
+      anchor.scale.setScalar(1+Math.sin(progress*Math.PI*2)*(1-progress)*.23);
+      if(item.rain)anchor.position.y=item.p[1]+(1-progress)**2*1.9;
+      if(item.type==='candle'&&item.lit){const f=reduced.matches?1:1+Math.sin(time*.009+item.id)*.09;const flame=anchor.getObjectByName('flame');flame.scale.set(.043*f,.1/f,.043*f);}
     }
-    pointers.delete(event.pointerId);press=null;dragging=pointers.size>0;if(viewport.hasPointerCapture(event.pointerId))viewport.releasePointerCapture(event.pointerId);
-    if(cancelled)spinVelocity=0;
+    renderer.render(scene,camera);canvas.dataset.yaw=yaw.toFixed(3);canvas.dataset.elevation=elevation.toFixed(3);frame=requestAnimationFrame(render);
   }
-  viewport.addEventListener('pointerup',event=>finish(event));viewport.addEventListener('pointercancel',event=>finish(event,true));
-  viewport.addEventListener('lostpointercapture',event=>{pointers.delete(event.pointerId);press=null;dragging=false;});
-  function rotate(delta){setAuto(false);spinVelocity=0;targetYaw+=delta;}
-  document.getElementById('cake-rotate-left').addEventListener('click',()=>rotate(-Math.PI/6));
-  document.getElementById('cake-rotate-right').addEventListener('click',()=>rotate(Math.PI/6));
-  autoButton.addEventListener('click',()=>setAuto(!auto));
-  document.getElementById('cake-reset').addEventListener('click',()=>{targetYaw=.18;targetElevation=.29;zoom=1;spinVelocity=0;setAuto(false);document.getElementById('cake-zoom').value=1;});
-  document.getElementById('cake-zoom').addEventListener('input',e=>{zoom=Number(e.target.value);});
-  viewport.addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home'].includes(event.key))return;event.preventDefault();if(event.key==='ArrowLeft')rotate(-.2);if(event.key==='ArrowRight')rotate(.2);if(event.key==='ArrowUp')targetElevation=Math.min(.85,targetElevation+.1);if(event.key==='ArrowDown')targetElevation=Math.max(.04,targetElevation-.1);if(event.key==='Home')document.getElementById('cake-reset').click();});
-  renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();failed=true;halt();atelier.hidden=true;screen.classList.remove('has-3d');screen.dataset.renderer='fallback';});
-  atelier.hidden=false;resize();
-  renderer.render(scene,camera);
-  screen.classList.add('has-3d');screen.dataset.renderer='webgl';
-  resume();
+  function reconcile(){if(document.hidden||!screen.classList.contains('active')||!visible||lost){cancelAnimationFrame(frame);frame=0;last=0;}else if(!frame)frame=requestAnimationFrame(render);}
+  new ResizeObserver(()=>{resize();reconcile();}).observe(canvas);
+  new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;reconcile();}).observe(canvas);
+  new MutationObserver(reconcile).observe(screen,{attributes:true,attributeFilter:['class']});document.addEventListener('visibilitychange',reconcile);
+  reduced.addEventListener('change',()=>setAuto(false));
+  canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();lost=true;screen.dataset.renderer='recovering';status('กำลังคืนภาพ 3D ของตกแต่งยังอยู่ครบ');reconcile();});
+  canvas.addEventListener('webglcontextrestored',()=>{lost=false;screen.dataset.renderer='webgl';resize();status('เค้ก 3D พร้อมแต่งต่อแล้ว');reconcile();});
+
+  const raycaster=new THREE.Raycaster();
+  // Pointer coordinates are CSS viewport pixels. Normalize the canvas-relative
+  // position to WebGL NDC (-1..1), invert Y, then cast through the current camera.
+  // Hit positions arrive in WORLD space. worldToLocal and the inverse world normal
+  // matrix store them in MODEL space, so decorations stay attached while rotating.
+  function ray(event){const r=canvas.getBoundingClientRect();updateCamera();raycaster.setFromCamera(new THREE.Vector2((event.clientX-r.left)/r.width*2-1,-(event.clientY-r.top)/r.height*2+1),camera);}
+  function surfacePoint(event){ray(event);const hit=raycaster.intersectObjects(surfaces,false)[0];if(!hit)return null;
+    const p=model.worldToLocal(hit.point.clone());const n=hit.face.normal.clone().applyNormalMatrix(new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld));
+    n.applyMatrix3(new THREE.Matrix3().getNormalMatrix(model.matrixWorld.clone().invert())).normalize();
+    if(n.y<-.2)return null;p.addScaledVector(n,.02);return {p:p.toArray(),n:n.toArray()};
+  }
+  function chooseAt(event){ray(event);const hit=raycaster.intersectObjects([...itemMeshes.values()],true)[0];if(!hit){selectedID=null;sync();return;}let node=hit.object;while(node&&!node.userData.itemID)node=node.parent;selectedID=node?.userData.itemID||null;sync();if(selectedID){$('tab-toppings').click();setTool('orbit');status('เลือกชิ้นนี้แล้ว ปรับขนาด หมุน ย้าย หรือลบได้');}}
+  function placeAt(event){
+    const hit=surfacePoint(event);if(!hit){status('แตะบนผิวเค้กเพื่อวางนะ ลากเพื่อหมุนหามุมได้');return;}
+    if(tool==='move'){const item=cake.items.find(i=>i.id===selectedID);if(!item)return;remember();Object.assign(item,hit);changed('ย้ายชิ้นนี้แล้ว ♡');setTool('orbit');return;}
+    if(tool==='text'&&!$('cake-message').value.trim()){status('พิมพ์ข้อความก่อนนะ');return;}
+    if(cake.items.length>=180){status('เค้กแน่นแล้วน้า ลบของตกแต่งบางชิ้นก่อนเพิ่มนะ');return;}
+    remember();const item=record(tool==='text'?'text':selectedType,hit.p,{n:hit.n,born:performance.now(),...(tool==='text'?{text:$('cake-message').value.trim(),color:$('cake-text-color').value}:{})});cake.items.push(item);selectedID=item.id;changed('วางแล้ว! แตะเพื่อวางอีกชิ้น หรือลากเพื่อหมุนเค้ก ♡');
+  }
+  const pointers=new Map();let press=null,pinch=0,stroke=null,strokeHistory=false;
+  function pipeAt(event){const hit=surfacePoint(event);if(!hit)return;
+    if(!stroke){remember();strokeHistory=true;stroke={color:$('icing-color').value,width:Number($('icing-width').value)/450,points:[]};cake.strokes.push(stroke);}
+    const last=stroke.points.at(-1);if(!last||new THREE.Vector3(...last).distanceTo(new THREE.Vector3(...hit.p))>.025){stroke.points.push(hit.p);buildArt();}
+  }
+  canvas.addEventListener('pointerdown',e=>{
+    if(e.button!==0||lost)return;canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});setAuto(false);
+    if(pointers.size===1){press={x:e.clientX,y:e.clientY,lx:e.clientX,ly:e.clientY,moved:false};if(tool==='pipe')pipeAt(e);}
+    else{const p=[...pointers.values()];pinch=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);press=null;stroke=null;}
+  });
+  canvas.addEventListener('pointermove',e=>{
+    if(!pointers.has(e.pointerId)){
+      if(['place','move','text'].includes(tool)&&e.pointerType!=='touch'){
+        const hit=surfacePoint(e);placementRing.visible=!!hit;
+        if(hit){placementRing.position.fromArray(hit.p);placementRing.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(...hit.n));}
+      }return;
+    }pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pointers.size===2){const p=[...pointers.values()],d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);if(pinch)zoom=THREE.MathUtils.clamp(zoom*d/pinch,.8,1.6);pinch=d;$('cake-zoom').value=zoom;return;}
+    if(!press)return;if(tool==='pipe'){pipeAt(e);return;}
+    const dx=e.clientX-press.lx,dy=e.clientY-press.ly;if(Math.hypot(e.clientX-press.x,e.clientY-press.y)>6)press.moved=true;
+    if(press.moved){targetYaw+=dx*.009;targetElevation=THREE.MathUtils.clamp(targetElevation+dy*.005,.05,1.35);}
+    press.lx=e.clientX;press.ly=e.clientY;
+  });
+  function finish(e,cancelled=false){
+    if(press&&!press.moved&&!cancelled&&tool!=='pipe'){if(tool==='orbit')chooseAt(e);else placeAt(e);}
+    if(stroke){if(cancelled&&strokeHistory){cake=history.pop();changed('ยกเลิกเส้นครีมนี้แล้ว');}else{sync();sound();status('บีบครีม 3D แล้ว ♡');}}
+    stroke=null;strokeHistory=false;press=null;pointers.delete(e.pointerId);if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);
+  }
+  canvas.addEventListener('pointerup',e=>finish(e));canvas.addEventListener('pointercancel',e=>finish(e,true));canvas.addEventListener('lostpointercapture',e=>{pointers.delete(e.pointerId);press=null;stroke=null;});
+  canvas.addEventListener('pointerleave',()=>{placementRing.visible=false;});
+  canvas.addEventListener('dragover',e=>e.preventDefault());canvas.addEventListener('drop',e=>{e.preventDefault();const type=e.dataTransfer.getData('text/plain');if(!toppingData.some(t=>t[0]===type))return;selectedType=type;setTool('place');placeAt(e);});
+  canvas.addEventListener('keydown',e=>{
+    if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','Enter','Delete','Escape'].includes(e.key))return;e.preventDefault();setAuto(false);
+    if(e.key==='ArrowLeft')targetYaw-=.2;if(e.key==='ArrowRight')targetYaw+=.2;if(e.key==='ArrowUp')targetElevation=Math.min(1.35,targetElevation+.12);if(e.key==='ArrowDown')targetElevation=Math.max(.05,targetElevation-.12);
+    if(e.key==='Home')$('cake-reset-view').click();if(e.key==='Escape')setTool('orbit');if(e.key==='Delete'&&selectedID)$('cake-delete-item').click();
+    if(e.key==='Enter'){const r=canvas.getBoundingClientRect(),event={clientX:r.left+r.width/2,clientY:r.top+r.height/2};if(tool==='orbit')chooseAt(event);else if(tool==='pipe'){pipeAt(event);stroke=null;sync();}else placeAt(event);}
+  });
+  toppingData.forEach(([type,emoji,label])=>{
+    const b=document.createElement('button');b.type='button';b.draggable=true;b.dataset.topping=type;b.setAttribute('aria-pressed','false');const icon=document.createElement('span');icon.textContent=emoji;b.append(icon,document.createTextNode(label));$('cake-toppings').append(b);
+    b.addEventListener('click',()=>{selectedType=type;setTool('place');status(`เลือก${label}แล้ว แตะบนเค้กทีละตำแหน่งเพื่อวาง`);sound();});b.addEventListener('dragstart',e=>{b.click();e.dataTransfer.setData('text/plain',type);});
+  });
+  document.querySelectorAll('[data-panel]').forEach(b=>{
+    b.addEventListener('click',()=>{document.querySelectorAll('[data-panel]').forEach(t=>{const active=t===b;t.setAttribute('aria-selected',String(active));$('panel-'+t.dataset.panel).hidden=!active;});setTool(b.dataset.panel==='piping'?'pipe':b.dataset.panel==='text'?'text':'orbit');sound();if(tool==='pipe')status('ลากเพื่อบีบครีมบนผิวเค้ก · กดหมุน / เลือกชิ้น เมื่อต้องการเปลี่ยนมุม');});
+    b.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight'].includes(e.key))return;e.preventDefault();const tabs=[...document.querySelectorAll('[data-panel]')],next=tabs[(tabs.indexOf(b)+(e.key==='ArrowRight'?1:3))%4];next.click();next.focus();});
+  });
+  $('cake-orbit').addEventListener('click',()=>{setTool('orbit');status('ลากเพื่อหมุน · แตะของตกแต่งที่วางแล้วเพื่อเลือกแก้ไข');});
+  $('cake-auto').addEventListener('click',()=>{const next=!auto;setTool('orbit');setAuto(next);status(next?'หมุนโชว์เค้กช้า ๆ ✨':'หยุดหมุนแล้ว เลือกของตกแต่งได้เลย');});
+  $('cake-reset-view').addEventListener('click',()=>{setAuto(false);targetYaw=.18;targetElevation=.38;zoom=1;$('cake-zoom').value=1;});
+  $('cake-top-view').addEventListener('click',()=>{setAuto(false);targetElevation=1.2;status('มุมด้านบน พร้อมวางของตกแต่งบนหน้าเค้ก');});
+  $('cake-zoom').addEventListener('input',e=>{zoom=Number(e.target.value);});
+  $('cake-gala').addEventListener('click',()=>{gala=!gala;screen.dataset.gala=gala;$('cake-gala').setAttribute('aria-pressed',String(gala));ambient.intensity=gala?.65:1.5;key.intensity=gala?2.7:3.3;rim.intensity=gala?3.5:2;fill.intensity=gala?.55:1.1;scene.environmentIntensity=gala?.4:.65;sound();});
+  for(const [id,keyName] of [['cake-flavor','flavor'],['cake-size','size'],['cake-frosting','frosting'],['cake-frost-color','frostColor']])$(id).addEventListener('change',()=>{
+    remember();const oldSize=cake.size;cake[keyName]=keyName==='size'?Number($(id).value):$(id).value;
+    if(keyName==='size'){
+      const old=layout(oldSize),next=layout(cake.size);
+      function remap(p){const index=Math.max(0,Math.min(oldSize-1,Math.floor((p[1]-.37)/.86)));const to=Math.min(index,cake.size-1),ratio=next[to].r/old[index].r;p[0]*=ratio;p[2]*=ratio;p[1]+=next[to].b-old[index].b;}
+      cake.items.forEach(i=>remap(i.p));cake.strokes.forEach(s=>s.points.forEach(remap));
+    }
+    changed('ปรับเค้กแล้ว ของตกแต่งยังอยู่ครบ ♡',true);
+  });
+  for(const [id,keyName] of [['cake-item-scale','scale'],['cake-item-angle','angle']])$(id).addEventListener('change',()=>{const item=cake.items.find(i=>i.id===selectedID);if(!item)return;remember();item[keyName]=Number($(id).value);changed('ปรับชิ้นนี้แล้ว');});
+  $('cake-move-item').addEventListener('click',()=>{if(!selectedID)return;setTool('move');status('แตะตำแหน่งใหม่บนเค้กเพื่อย้ายชิ้นที่เลือก');});
+  $('cake-delete-item').addEventListener('click',()=>{if(!selectedID)return;remember();cake.items=cake.items.filter(i=>i.id!==selectedID);selectedID=null;changed('ลบชิ้นนี้แล้ว กด Undo เพื่อคืนได้');});
+  $('cake-undo').addEventListener('click',()=>{if(!history.length)return;cake=history.pop();selectedID=null;changed('ย้อนกลับแล้ว',true);});
+  $('cake-clear').addEventListener('click',()=>{remember();cake.items=[];cake.strokes=[];selectedID=null;changed('ล้างของตกแต่งแล้ว เลือกไอคอนเพื่อเริ่มแต่งใหม่ได้เลย');});
+  $('cake-add-text').addEventListener('click',()=>{
+    const text=$('cake-message').value.trim();if(!text){status('พิมพ์ข้อความก่อนนะ');return;}remember();const top=layout(cake.size).at(-1);const item=record('text',[0,top.b+top.h+.05,top.r*.32],{text,color:$('cake-text-color').value,born:performance.now()});cake.items.push(item);selectedID=item.id;changed('เพิ่มข้อความ 3D บนเค้กแล้ว');
+  });
+  $('cake-rain').addEventListener('click',()=>{if(cake.items.length>156){status('ลบของตกแต่งบางชิ้นก่อนโปรยเพิ่มนะ');return;}remember();for(let i=0;i<24;i++){const levels=layout(cake.size),index=i%cake.size,t=levels[index],inner=levels[index+1]?.r+.1||0;const a=i*2.399,r=inner+Math.random()*Math.max(.05,t.r-inner-.06);cake.items.push(record('sprinkles',[Math.cos(a)*r,t.b+t.h+.05,Math.sin(a)*r],{scale:.65,born:performance.now()+i*8,rain:true}));}changed('โปรยไข่มุกทองลงบนเค้ก ✨');});
+  $('btn-blow').addEventListener('click',()=>{const lit=cake.items.filter(i=>i.type==='candle'&&i.lit);if(!lit.length){status('เลือกไอคอนเทียนแล้ววางก่อนเป่านะ');return;}remember();lit.forEach(i=>i.lit=false);changed('ฟู่ววว~ ขอให้พรของเธอเป็นจริง 💗');});
+  $('cake-continue').addEventListener('click',()=>document.dispatchEvent(new Event('cake-finished')));
+  $('cake-export').addEventListener('click',()=>{
+    if(lost)return;
+    // Render the same 3D scene at export resolution, then composite its alpha over
+    // the studio background. No remote textures are used, so PNG stays origin-clean.
+    const ratio=renderer.getPixelRatio(),aspect=camera.aspect;renderer.setPixelRatio(1);renderer.setSize(1600,1300,false);camera.aspect=1600/1300;camera.updateProjectionMatrix();updateCamera();
+    const wasSelected=selectionRing.visible,wasPlacement=placementRing.visible;selectionRing.visible=false;placementRing.visible=false;renderer.render(scene,camera);
+    const output=document.createElement('canvas');output.width=1600;output.height=1300;const c=output.getContext('2d'),g=c.createRadialGradient(800,520,50,800,650,1050);g.addColorStop(0,gala?'#4b2e44':'#fff9ec');g.addColorStop(1,gala?'#171728':'#ead0d2');c.fillStyle=g;c.fillRect(0,0,1600,1300);c.drawImage(canvas,0,0);
+    c.fillStyle=gala?'#efcea2':'#9b7057';c.textAlign='center';c.font='22px Georgia';c.fillText('MEL’S GRAND PÂTISSERIE · Made with love',800,1260);
+    selectionRing.visible=wasSelected;placementRing.visible=wasPlacement;renderer.setPixelRatio(ratio);camera.aspect=aspect;resize();renderer.render(scene,camera);
+    output.toBlob(blob=>{if(!blob){status('บันทึกไม่สำเร็จ ลองอีกครั้งนะ');return;}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Mel-birthday-cake-3D.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);status('บันทึกภาพเค้ก 3D แล้ว ♡');},'image/png');sound();
+  });
+  buildBase();buildArt();setAuto(auto);canvas.dataset.tool=tool;screen.dataset.renderer='webgl';
+  document.fonts.ready.then(()=>{buildBase();reconcile();});resize();reconcile();
 }

@@ -127,6 +127,7 @@ for (const width of [1280, 390]) test(`full birthday flow at ${width}px, single-
   assert.equal(await page.locator('.memory-card button').first().evaluate(button => document.activeElement === button), true);
   await page.locator('#btn-goto-cake').click();
   await page.locator('#screen-cake.active').waitFor();
+  await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.renderer==='webgl');
   await page.locator('#btn-blow').click();
   assert.equal(await page.locator('#cake-canvas').getAttribute('data-lit'), '0');
   await page.locator('#cake-continue').click();
@@ -335,38 +336,6 @@ test('storage quota failure retains successive comments in memory', async t => {
   assert.equal(await page.locator('.cmt').count(), 2);
 });
 
-for (const width of [1280,390]) test(`2D cake decoration, undo, PNG export and letter at ${width}px`, async t => {
-  const page=await setup(t,{viewport:{width,height:950}});
-  await page.locator('#btn-goto-cake').evaluate(b=>b.click());
-  await page.locator('#screen-cake.active').waitFor();
-  const canvas=page.locator('#cake-canvas');
-  const clickCake=async(x,y)=>{await canvas.scrollIntoViewIfNeeded();const r=await canvas.boundingBox();await canvas.click({position:{x:r.width*x/800,y:r.height*y/650}});};
-  assert.equal(await canvas.getAttribute('data-lit'),'3');
-  for(const flavor of ['#664035','#f5e5bb','#b4cc8e','#f5a9bd'])await page.locator('#cake-flavor').selectOption(flavor);
-  for(const size of ['1','3','2'])await page.locator('#cake-size').selectOption(size);
-  await page.locator('#cake-frosting').selectOption('shell');
-  await page.locator('#tab-toppings').click();
-  for(const topping of ['strawberry','cherry','chocolate','candle','cream','flower','bow']){
-    await page.locator(`[data-topping="${topping}"]`).click();await clickCake(280+Math.random()*240,440);
-  }
-  assert.equal(await canvas.getAttribute('data-items'),'10');
-  await page.locator('#cake-undo').click();assert.equal(await canvas.getAttribute('data-items'),'9');
-  await page.locator('#cake-rain').click();assert.equal(await canvas.getAttribute('data-items'),'74');
-  await page.locator('#tab-piping').click();await canvas.scrollIntoViewIfNeeded();
-  const r=await canvas.boundingBox();await page.mouse.move(r.x+r.width*.4,r.y+r.height*.7);await page.mouse.down();await page.mouse.move(r.x+r.width*.6,r.y+r.height*.7,{steps:10});await page.mouse.up();
-  assert.equal(await canvas.getAttribute('data-strokes'),'1');
-  await page.locator('#tab-text').click();await page.locator('#cake-message').fill('HBD Mel ♡');await page.locator('#cake-add-text').click();
-  assert.equal(await canvas.getAttribute('data-items'),'75');
-  await page.locator('#cake-clear').click();assert.equal(await canvas.getAttribute('data-items'),'3');
-  await page.locator('#cake-undo').click();assert.equal(await canvas.getAttribute('data-items'),'75');
-  const download=page.waitForEvent('download');await page.locator('#cake-export').click();const file=await download;
-  assert.equal(file.suggestedFilename(),'Mel-birthday-cake.png');const bytes=fs.readFileSync(await file.path());assert.equal(bytes.toString('hex',0,8),'89504e470d0a1a0a');assert.equal(bytes.readUInt32BE(16),1600);assert.equal(bytes.readUInt32BE(20),1300);
-  fs.mkdirSync(path.join(__dirname,'..','test-results'),{recursive:true});await page.screenshot({path:path.join(__dirname,'..','test-results',`cake-2d-${width}.png`),fullPage:true});
-  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-  await page.locator('#btn-blow').click();assert.equal(await canvas.getAttribute('data-lit'),'0');
-  await page.locator('#cake-continue').click();await page.locator('#screen-letter.active').waitFor();
-});
-
 test('captions persist independently and render user text safely',async t=>{
   const page=await setup(t);await page.locator('#btn-goto-gallery').evaluate(b=>b.click());await page.locator('#screen-gallery.active').waitFor();
   const cards=page.locator('.memory-card');
@@ -378,11 +347,64 @@ test('captions persist independently and render user text safely',async t=>{
   await cards.nth(0).locator('button').first().click();assert.equal(await page.locator('#photo-caption').textContent(),'<img src=x onerror=alert(1)>');
 });
 
-test('canvas touch coordinates, keyboard placement, and reduced motion',async t=>{
-  const page=await setup(t,{viewport:{width:390,height:950}});await page.emulateMedia({reducedMotion:'reduce'});
-  await page.locator('#btn-goto-cake').evaluate(b=>b.click());await page.locator('#screen-cake.active').waitFor();
-  const canvas=page.locator('#cake-canvas');await canvas.scrollIntoViewIfNeeded();const r=await canvas.boundingBox();
-  const touch=await page.context().newCDPSession(page);await touch.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
-  await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:r.x+r.width*.5,y:r.y+r.height*.7}]});await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
-  assert.equal(await canvas.getAttribute('data-items'),'4');await canvas.focus();await page.keyboard.press('ArrowRight');await page.keyboard.press('Enter');assert.equal(await canvas.getAttribute('data-items'),'5');
+for(const width of [1280,390])test(`3D cake studio placement, rotation, editing and export at ${width}px`,async t=>{
+  const page=await setup(t,{viewport:{width,height:1000}});await page.locator('#btn-goto-cake').evaluate(b=>b.click());
+  await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.renderer==='webgl');
+  const canvas=page.locator('#cake-canvas');await canvas.scrollIntoViewIfNeeded();
+  await page.locator('#cake-reset-view').click();await page.waitForTimeout(350);
+  fs.mkdirSync(path.join(__dirname,'..','test-results'),{recursive:true});
+  await page.screenshot({path:path.join(__dirname,'..','test-results',`cake-3d-pristine-${width}.png`),fullPage:true});
+  assert.equal(await canvas.getAttribute('data-lit'),'3');
+  await page.locator('#cake-clear').click();assert.equal(await canvas.getAttribute('data-items'),'0');
+  await page.locator('#tab-toppings').click();
+  const clickSurface=async(x=.5,y=.55)=>{await canvas.scrollIntoViewIfNeeded();const r=await canvas.boundingBox();await canvas.click({position:{x:r.width*x,y:r.height*y}});};
+  for(const [i,type] of ['strawberry','cherry','cream','flower','bow','chocolate','candle','sprinkles'].entries()){
+    await page.locator(`[data-topping="${type}"]`).click();await clickSurface(.46+(i%3)*.04,.53+(i%2)*.035);
+    assert.equal(Number(await canvas.getAttribute('data-items')),i+1,`place ${type} on 3D surface`);
+  }
+  await page.locator('#cake-item-scale').fill('1.4');await page.locator('#cake-item-scale').dispatchEvent('change');
+  await page.locator('#cake-item-angle').fill('90');await page.locator('#cake-item-angle').dispatchEvent('change');
+  await page.locator('#cake-move-item').click();await clickSurface(.56,.58);assert.equal(await canvas.getAttribute('data-items'),'8');
+  await page.locator('#cake-delete-item').click();assert.equal(await canvas.getAttribute('data-items'),'7');
+  await page.locator('#cake-undo').click();assert.equal(await canvas.getAttribute('data-items'),'8');
+  await canvas.scrollIntoViewIfNeeded();let r=await canvas.boundingBox();const oldYaw=Number(await canvas.getAttribute('data-yaw'));
+  await page.mouse.move(r.x+r.width*.7,r.y+r.height*.55);await page.mouse.down();await page.mouse.move(r.x+r.width*.3,r.y+r.height*.55,{steps:12});await page.mouse.up();
+  await page.waitForFunction(old=>Math.abs(Number(document.querySelector('#cake-canvas').dataset.yaw)-old)>.3,oldYaw);
+  assert.equal(await canvas.getAttribute('data-items'),'8','rotation never places a decoration');
+  await page.locator('#cake-reset-view').click();await page.waitForTimeout(350);
+  await page.locator('#tab-base').click();await page.locator('#cake-flavor').selectOption('#664035');await page.locator('#cake-size').selectOption('3');
+  await page.locator('#cake-size').selectOption('1');await page.locator('#cake-size').selectOption('2');await page.locator('#cake-flavor').selectOption('#f5a9bd');
+  assert.equal(await canvas.getAttribute('data-items'),'8','changing tiers retains placed pieces');
+  await page.locator('#tab-piping').click();await canvas.scrollIntoViewIfNeeded();r=await canvas.boundingBox();
+  await page.mouse.move(r.x+r.width*.46,r.y+r.height*.56);await page.mouse.down();await page.mouse.move(r.x+r.width*.55,r.y+r.height*.56,{steps:8});await page.mouse.up();assert.equal(await canvas.getAttribute('data-strokes'),'1');
+  await page.locator('#tab-text').click();await page.locator('#cake-message').fill('HBD Mel ♡');await page.locator('#cake-add-text').click();assert.equal(await canvas.getAttribute('data-items'),'9');
+  await page.locator('#tab-toppings').click();await page.locator('#cake-rain').click();assert.equal(await canvas.getAttribute('data-items'),'33');
+  await page.locator('#cake-gala').click();await page.waitForTimeout(700);
+  const download=page.waitForEvent('download');await page.locator('#cake-export').click();const file=await download;assert.equal(file.suggestedFilename(),'Mel-birthday-cake-3D.png');
+  const bytes=fs.readFileSync(await file.path());assert.equal(bytes.readUInt32BE(16),1600);assert.equal(bytes.readUInt32BE(20),1300);
+  fs.writeFileSync(path.join(__dirname,'..','test-results',`cake-3d-export-${width}.png`),bytes);
+  await page.screenshot({path:path.join(__dirname,'..','test-results',`cake-3d-studio-${width}.png`),fullPage:true});
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.locator('#btn-blow').click();assert.equal(await canvas.getAttribute('data-lit'),'0');await page.locator('#cake-continue').click();await page.locator('#screen-letter.active').waitFor();
+});
+
+test('3D studio touch rotation, keyboard placement and reduced motion',async t=>{
+  const page=await setup(t,{viewport:{width:390,height:1000}});await page.emulateMedia({reducedMotion:'reduce'});
+  await page.locator('#btn-goto-cake').evaluate(b=>b.click());await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.renderer==='webgl');
+  const canvas=page.locator('#cake-canvas');await canvas.scrollIntoViewIfNeeded();assert.equal(await page.locator('#cake-auto').getAttribute('aria-pressed'),'false');
+  const before=await canvas.getAttribute('data-items'),r=await canvas.boundingBox();
+  const touch=await page.context().newCDPSession(page);await touch.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
+  const x=r.x+r.width*.7,y=r.y+r.height*.55;await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});for(let i=1;i<=5;i++)await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x-i*20,y}]});await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await page.waitForFunction(()=>Number(document.querySelector('#cake-canvas').dataset.yaw)<-.3);assert.equal(await canvas.getAttribute('data-items'),before);
+  await page.locator('#cake-reset-view').click();await page.locator('#tab-toppings').click();await page.locator('[data-topping="strawberry"]').click();await canvas.scrollIntoViewIfNeeded();const tapBox=await canvas.boundingBox();
+  await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:tapBox.x+tapBox.width*.5,y:tapBox.y+tapBox.height*.55}]});await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  assert.equal(Number(await canvas.getAttribute('data-items')),Number(before)+1,'a touch tap places one strawberry');
+  await canvas.focus();await page.keyboard.press('Enter');assert.equal(Number(await canvas.getAttribute('data-items')),Number(before)+2);
+  await page.keyboard.press('ArrowRight');await page.waitForFunction(()=>Number(document.querySelector('#cake-canvas').dataset.yaw)>.2);
+});
+
+test('unavailable WebGL keeps a working fallback and letter navigation',async t=>{
+  const page=await setup(t,{init:()=>{const get=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){return type.startsWith('webgl')?null:get.call(this,type,...args);};}});
+  await page.locator('#btn-goto-cake').evaluate(b=>b.click());await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.renderer==='fallback'&&document.querySelector('#cake-canvas').dataset.lit==='3');
+  await page.locator('#btn-blow').click();assert.equal(await page.locator('#cake-canvas').getAttribute('data-lit'),'0');await page.locator('#cake-continue').click();await page.locator('#screen-letter.active').waitFor();
 });
