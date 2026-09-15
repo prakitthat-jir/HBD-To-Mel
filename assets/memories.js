@@ -18,7 +18,23 @@
     ["m17","Best Picture 🌤️ 2/10000","เมลยืนริมทางเดินไม้ใกล้น้ำ"],
     ["m18","มีไอจีไหมครับ 🍃","ภาพนั่งพักริมระเบียงไม้ริมน้ำ"],
     ["m19","แอบฟรินน <3 📷","มือกำลังถือภาพโพลารอยด์สองใบ"],
-    ["m20","ขอบคุณที่มาสร้างความทรงจำดีๆด้วยกัน แฮปปี้เบิร์ดเดย์จู้💗","ภาพกลุ่มเพื่อนผ่านกระจกทรงกลมในร้าน"]
+    ["m20","ขอบคุณที่มาสร้างความทรงจำดีๆด้วยกัน แฮปปี้เบิร์ดเดย์จู้💗","ภาพกลุ่มเพื่อนผ่านกระจกทรงกลมในร้าน"],
+    ["S__21708804_0", "", "ความทรงจำเพิ่มเติม รูปที่ 1", [640, 551, 1125, 968]],
+    ["S__21708805_0", "", "ความทรงจำเพิ่มเติม รูปที่ 2", [480, 640, 1081, 1440]],
+    ["S__21708806_0", "", "ความทรงจำเพิ่มเติม รูปที่ 3", [480, 640, 1081, 1440]],
+    ["S__21708807_0", "", "ความทรงจำเพิ่มเติม รูปที่ 4", [480, 640, 1081, 1440]],
+    ["S__21708808_0", "", "ความทรงจำเพิ่มเติม รูปที่ 5", [640, 480, 1440, 1081]],
+    ["S__21708809_0", "", "ความทรงจำเพิ่มเติม รูปที่ 6", [480, 640, 1081, 1440]],
+    ["S__21708810_0", "", "ความทรงจำเพิ่มเติม รูปที่ 7", [480, 640, 1081, 1440]],
+    ["S__21708811_0", "", "ความทรงจำเพิ่มเติม รูปที่ 8", [480, 640, 1081, 1440]],
+    ["S__21708812_0", "", "ความทรงจำเพิ่มเติม รูปที่ 9", [480, 640, 1081, 1440]],
+    ["S__21708813_0", "", "ความทรงจำเพิ่มเติม รูปที่ 10", [640, 480, 1440, 1081]],
+    ["S__21708815_0", "", "ความทรงจำเพิ่มเติม รูปที่ 11", [480, 640, 1081, 1440]],
+    ["S__21708816_0", "", "ความทรงจำเพิ่มเติม รูปที่ 12", [480, 640, 1081, 1440]],
+    ["S__21708817_0", "", "ความทรงจำเพิ่มเติม รูปที่ 13", [480, 640, 1081, 1440]],
+    ["S__21708818_0", "", "ความทรงจำเพิ่มเติม รูปที่ 14", [480, 640, 1081, 1440]],
+    ["S__21708819_0", "", "ความทรงจำเพิ่มเติม รูปที่ 15", [480, 640, 1081, 1440]],
+    ["S__21708820_0", "", "ความทรงจำเพิ่มเติม รูปที่ 16", [640, 480, 1440, 1081]]
   ];
   const gallery = document.getElementById('memory-gallery');
   // Published captions from the author's export. A new storage namespace keeps
@@ -98,7 +114,7 @@
     });
   }, {threshold: .12});
 
-  photos.forEach(([file, text, alt], index) => {
+  photos.forEach(([file, text, alt, dimensions], index) => {
     const card = document.createElement('figure');
     card.className = 'memory-card'; card.dataset.index = index;
     const button = document.createElement('button');
@@ -106,15 +122,15 @@
     button.setAttribute('aria-label', `ดูรูป ${index + 1}: ${alt}`);
     const img = document.createElement('img');
     const landscape = ['m5', 'm6', 'm8'].includes(file);
-    const thumbWidth = landscape ? 640 : 480;
-    const fullWidth = landscape ? 1440 : ['m2', 'm10'].includes(file) ? 1080 : 1081;
-    img.width = thumbWidth; img.height = landscape ? 480 : 640;
+    const thumbWidth = dimensions ? dimensions[0] : landscape ? 640 : 480;
+    const fullWidth = dimensions ? dimensions[2] : landscape ? 1440 : ['m2', 'm10'].includes(file) ? 1080 : 1081;
+    img.width = thumbWidth; img.height = dimensions ? dimensions[1] : landscape ? 480 : 640;
     img.src = `assets/photos/${file}-640.webp`;
     img.srcset = `assets/photos/${file}-640.webp ${thumbWidth}w, assets/photos/${file}-1440.webp ${fullWidth}w`;
     img.sizes = '(max-width: 640px) 44vw, 300px';
     img.alt = alt; img.loading = 'lazy'; img.decoding = 'async'; img.draggable = false;
     const cap = document.createElement('span'); cap.className = 'memory-caption'; cap.textContent = text;
-    const number = document.createElement('span'); number.className = 'memory-number'; number.textContent = `MEMORY ${String(index + 1).padStart(2, '0')} / 18 ♡`;
+    const number = document.createElement('span'); number.className = 'memory-number'; number.textContent = `MEMORY ${String(index + 1).padStart(2, '0')} / ${photos.length} ♡`;
     button.append(img, cap, number); card.append(button); gallery.append(card);
     const editor = document.createElement('details'); editor.className = 'caption-editor';
     const summary = document.createElement('summary'); summary.textContent = '✎ แก้ไขแคปชั่น';

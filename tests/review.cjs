@@ -94,7 +94,7 @@ for (const width of [1280, 390]) test(`full birthday flow at ${width}px, single-
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('hbd-mel-history')).length), 1);
   await page.locator('#btn-goto-gallery').click();
   await page.locator('#screen-gallery.active').waitFor();
-  assert.equal(await page.locator('.memory-card').count(), 18);
+  assert.equal(await page.locator('.memory-card').count(), 34);
   for (const photo of await page.locator('.memory-card img').all()) {
     await photo.scrollIntoViewIfNeeded();
     await photo.evaluate(img => img.decode());
@@ -105,13 +105,13 @@ for (const width of [1280, 390]) test(`full birthday flow at ${width}px, single-
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   await page.locator('.memory-card button').first().click();
   await page.locator('#photo-full').evaluate(img => img.decode());
-  assert.match(await page.locator('#photo-count').textContent(), /^1 \/ 18/);
+  assert.match(await page.locator('#photo-count').textContent(), /^1 \/ 34/);
   await page.keyboard.press('ArrowLeft');
-  await page.waitForFunction(() => document.querySelector('#photo-count').textContent.startsWith('18 /'));
-  assert.match(await page.locator('#photo-count').textContent(), /^18 \/ 18/);
+  await page.waitForFunction(() => document.querySelector('#photo-count').textContent.startsWith('34 /'));
+  assert.match(await page.locator('#photo-count').textContent(), /^34 \/ 34/);
   await page.locator('#photo-next').click();
   await page.waitForFunction(() => document.querySelector('#photo-count').textContent.startsWith('1 /'));
-  assert.match(await page.locator('#photo-count').textContent(), /^1 \/ 18/);
+  assert.match(await page.locator('#photo-count').textContent(), /^1 \/ 34/);
   // Drag the actual image; a short drag snaps back without changing the photo.
   const bounds = await page.locator('#photo-full').boundingBox();
   await page.mouse.move(bounds.x + bounds.width * .7, bounds.y + bounds.height / 2);
@@ -188,7 +188,7 @@ test('gallery touch swipes change photos without treating taps as swipes', async
   await page.waitForFunction(() => document.querySelector('#photo-count').textContent.startsWith('2 /'));
   await page.locator('#photo-full').evaluate(img => Promise.all(img.getAnimations().map(a => a.finished)));
   await swipe(8);
-  assert.match(await page.locator('#photo-count').textContent(), /^2 \/ 18/);
+  assert.match(await page.locator('#photo-count').textContent(), /^2 \/ 34/);
   await page.locator('#photo-close').click();
   assert.equal(await page.locator('#photo-viewer').evaluate(dialog => dialog.open), false);
 });
@@ -357,7 +357,7 @@ test('captions persist independently and render user text safely',async t=>{
   await cards.nth(0).locator('button').first().click();assert.equal(await page.locator('#photo-caption').textContent(),'<img src=x onerror=alert(1)>');
   await page.keyboard.press('Escape');await cards.nth(0).locator('summary').click();await cards.nth(0).locator('textarea').fill('แคปชั่นล่าสุดที่ยังไม่ได้กดบันทึก');
   const download=page.waitForEvent('download');await page.locator('#btn-export-captions').click();const file=await download;assert.equal(file.suggestedFilename(),'mel-latest-captions.json');
-  const exported=JSON.parse(fs.readFileSync(await file.path(),'utf8'));assert.equal(Object.keys(exported.captions).length,18);assert.equal(exported.captions.m13,'แคปชั่นล่าสุดที่ยังไม่ได้กดบันทึก');assert.equal(exported.captions.m1,'Another memory');
+  const exported=JSON.parse(fs.readFileSync(await file.path(),'utf8'));assert.equal(Object.keys(exported.captions).length,34);assert.equal(exported.captions.m13,'แคปชั่นล่าสุดที่ยังไม่ได้กดบันทึก');assert.equal(exported.captions.m1,'Another memory');
 });
 
 for(const width of [1280,390])test(`3D cake studio placement, rotation, editing and export at ${width}px`,async t=>{
