@@ -74,9 +74,9 @@ body:has(#screen-gallery.active) #toolbar .tool:not(#btn-music){display:none}
 @media(prefers-reduced-motion:reduce){.memory-card,.memory-card img,#photo-related .related-photo,#photo-thumbnails button{transition:none}.memory-card{--parallax:0px!important;--tilt-x:0deg!important;--tilt-y:0deg!important;--lift:0px!important}#photo-related .related-photo{--cloud-x:0px!important;--cloud-y:0px!important}}
 
 /* Smaller photos form a scattered collage, with room for each caption. */
-.memory-card img{height:205px;object-fit:cover;object-position:center 20%;background:var(--primary-soft)}
-.memory-card:nth-child(4n+2) img{height:175px}
-.memory-card:nth-child(7n) img{height:155px}
+
+
+
 .memory-card:before{background:repeating-linear-gradient(90deg,#e9a9bc77 0 2px,#f5d0db99 2px 4px)}
 .memory-card:nth-child(3n+2):before{background:repeating-linear-gradient(45deg,#d8c3e377 0 5px,#ecddf399 5px 10px)}
 .memory-card.is-pinned{animation:collage-breathe 5s ease-in-out infinite}
@@ -90,6 +90,9 @@ body:has(#screen-gallery.active) #toolbar .tool:not(#btn-music){display:none}
 .photo-focus{max-width:580px;margin:auto}
 #photo-related .related-photo:before{background:#dfc7e899}
 #photo-full{background:var(--primary-soft)}
-@media(min-width:761px) and (max-width:1000px){.memory-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.memory-card img{height:185px}}
-@media(max-width:760px){.scrapbook-heading h2{font-size:38px}.scrapbook-heading{padding-bottom:24px}.archive-stamp{width:66px;height:66px;font-size:7px;right:6px;bottom:20px}.scrapbook-subtitle{font-size:14px}.album-intro{padding:22px 55px 23px 18px}.album-intro p{font-size:14px}.album-intro>.font-script{font-size:26px}.memory-grid{gap:20px 15px;padding:12px 9px 30px}.memory-card img{height:148px}.memory-card:nth-child(4n+2) img{height:132px}.memory-card:nth-child(7n) img{height:118px}.memory-caption{font-size:14px;padding-top:9px}.memory-tag{font-size:6px}.album-tip{font-size:12px}}
+@media(min-width:761px) and (max-width:1000px){.memory-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){.scrapbook-heading h2{font-size:38px}.scrapbook-heading{padding-bottom:24px}.archive-stamp{width:66px;height:66px;font-size:7px;right:6px;bottom:20px}.scrapbook-subtitle{font-size:14px}.album-intro{padding:22px 55px 23px 18px}.album-intro p{font-size:14px}.album-intro>.font-script{font-size:26px}.memory-grid{gap:20px 15px;padding:12px 9px 30px}.memory-caption{font-size:14px;padding-top:9px}.memory-tag{font-size:6px}.album-tip{font-size:12px}}
 @media(prefers-reduced-motion:reduce){.memory-card.is-pinned{animation:none}}
+
+/* Let each photo define its frame height; keep its complete original composition. */
+.memory-card img{width:100%;height:auto;aspect-ratio:auto;object-fit:contain;background:transparent}

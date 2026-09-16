@@ -378,14 +378,18 @@ for (const width of [1280, 390]) test(`gallery is read-only at ${width}px`, asyn
   assert.equal(await page.locator('.memory-card').count(), 26);
   const compact = await page.locator('.memory-grid').evaluate(grid => ({columns:getComputedStyle(grid).gridTemplateColumns.split(' ').length,imageHeight:grid.querySelector('img').getBoundingClientRect().height}));
   assert.equal(compact.columns, width > 760 ? 4 : 2);
-  assert.ok(compact.imageHeight < 230);
+  assert.ok(compact.imageHeight < 350);
   assert.match(await page.locator('.memory-card img').first().getAttribute('src'), /m13-640/);
   assert.notEqual(await page.locator('.memory-caption').first().textContent(), 'old draft');
   assert.equal(await page.locator('#memory-filters, .board-context').count(), 0);
-  assert.equal(await page.locator('.memory-card img').first().evaluate(img => getComputedStyle(img).objectFit), 'cover');
+  assert.equal(await page.locator('.memory-card img').first().evaluate(img => getComputedStyle(img).objectFit), 'contain');
   assert.equal(await page.locator('.memory-card:not([hidden])').count(), 26);
   await page.locator('.memory-card').first().scrollIntoViewIfNeeded();
-  await page.locator('.memory-card img').first().evaluate(img => img.decode());
+  const imageRatios = await page.locator('.memory-card img').evaluateAll(async imgs => {
+    await Promise.all(imgs.map(img => { img.loading = 'eager'; return img.decode(); }));
+    return imgs.map(img => ({rendered:img.clientWidth / img.clientHeight, original:img.naturalWidth / img.naturalHeight}));
+  });
+  assert.ok(imageRatios.every(({rendered,original}) => Math.abs(rendered - original) < .015), 'every frame follows its photo aspect ratio without cropping');
   await page.waitForFunction(() => document.querySelector('.memory-card').style.gridRowEnd.startsWith('span'));
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   fs.mkdirSync(path.join(__dirname, '..', 'test-results'), {recursive:true});
