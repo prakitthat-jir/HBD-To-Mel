@@ -198,7 +198,7 @@
       if (!entry.isIntersecting) return;
       revealObserver.unobserve(entry.target);
       if (!reducedMotion.matches) entry.target.animate([
-        {opacity: 0, translate: '0 30px'}, {opacity: 1, translate: '0 0'}
+        {opacity: 0, translate: `${Number(entry.target.dataset.index) % 2 ? 22 : -22}px 28px`, scale: '.91'}, {opacity: 1, translate: '0 -4px', scale: '1.015', offset: .72}, {opacity: 1, translate: '0 0', scale: '1'}
       ], {duration: 650, delay: Number(entry.target.dataset.index) % 3 * 65, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards'});
     });
   }, {threshold: .12});
@@ -218,7 +218,7 @@
     img.width = thumbWidth; img.height = dimensions ? dimensions[1] : landscape ? 480 : 640;
     img.src = `assets/photos/${file}-640.webp`;
     img.srcset = `assets/photos/${file}-640.webp ${thumbWidth}w, assets/photos/${file}-1440.webp ${fullWidth}w`;
-    img.sizes = '(max-width: 760px) 44vw, 340px';
+    img.sizes = '(max-width: 760px) 40vw, 240px';
     img.alt = alt; img.loading = 'lazy'; img.decoding = 'async'; img.draggable = false;
     const cap = document.createElement('span'); cap.className = 'memory-caption'; cap.textContent = text;
     const number = document.createElement('span'); number.className = 'memory-number'; number.textContent = `MEMORY ${String(index + 1).padStart(2, '0')} / ${photos.length} ♡`;

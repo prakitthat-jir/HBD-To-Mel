@@ -376,6 +376,9 @@ for (const width of [1280, 390]) test(`gallery is read-only at ${width}px`, asyn
   await page.locator('#screen-gallery.active').waitFor();
   assert.equal(await page.locator('.caption-editor, .photo-order-toolbar, .photo-order-controls, #btn-export-captions').count(), 0);
   assert.equal(await page.locator('.memory-card').count(), 26);
+  const compact = await page.locator('.memory-grid').evaluate(grid => ({columns:getComputedStyle(grid).gridTemplateColumns.split(' ').length,imageHeight:grid.querySelector('img').getBoundingClientRect().height}));
+  assert.equal(compact.columns, width > 760 ? 4 : 2);
+  assert.ok(compact.imageHeight < 230);
   assert.match(await page.locator('.memory-card img').first().getAttribute('src'), /m13-640/);
   assert.notEqual(await page.locator('.memory-caption').first().textContent(), 'old draft');
   await page.locator('#memory-filters [data-theme="outside"]').click();
@@ -486,6 +489,9 @@ for(const width of [1280,390])test(`tier flavors, real-model catalog and individ
   await page.locator('[data-delete-item]').last().click();assert.equal(await canvas.getAttribute('data-items'),'1');await page.locator('#cake-undo').click();assert.equal(await canvas.getAttribute('data-items'),'2');
   await page.locator('#cake-preset').selectOption('cookie');await page.locator('#cake-apply-preset').click();assert.equal(await canvas.getAttribute('data-candles'),'3');
   const before=await canvas.getAttribute('data-items');await page.locator('#cake-show').click();await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.phase==='show');
+  assert.equal(await page.locator('.gala-atmosphere').isVisible(), true);
+  await page.locator('#cake-gala').click();assert.equal(await page.locator('.gala-atmosphere').isVisible(), false);
+  await page.locator('#cake-gala').click();assert.equal(await page.locator('.gala-atmosphere').isVisible(), true);
   assert.equal(await canvas.getAttribute('data-lit'),'3');assert.equal(await page.locator('.cake-panel').isVisible(),false);assert.equal(await page.locator('#cake-continue').isDisabled(),true);
   await page.locator('#cake-auto').click();await page.waitForTimeout(400);await page.screenshot({path:path.join(__dirname,'..','test-results',`cake-show-${width}.png`),fullPage:true});
   await page.locator('#cake-candle-targets button').first().click();assert.equal(await canvas.getAttribute('data-lit'),'2');
