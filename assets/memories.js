@@ -71,20 +71,6 @@
   }
   const sizeObserver = new ResizeObserver(layoutBoard);
   sizeObserver.observe(gallery);
-  const filterBar = document.getElementById('memory-filters');
-  Object.entries(themes).forEach(([key, [title]]) => {
-    const button = document.createElement('button'); button.type = 'button'; button.textContent = title;
-    button.dataset.theme = key; button.setAttribute('aria-pressed', String(key === 'all'));
-    button.addEventListener('click', () => {
-      [...filterBar.children].forEach(item => item.setAttribute('aria-pressed', String(item === button)));
-      cards.forEach((card, index) => { card.hidden = key !== 'all' && photoThemes[index] !== key; });
-      document.getElementById('memory-context').textContent = title;
-      document.getElementById('memory-filter-status').textContent = `${cards.filter(card => !card.hidden).length} รูป · ${title}`;
-      layoutBoard(); scheduleMotion();
-    });
-    filterBar.append(button);
-  });
-
   function renderRelated(index) {
     const focusedSlot = [...related.children].indexOf(document.activeElement);
     const indices = photos.map((_, i) => i).filter(i => i !== index).sort((a, b) =>
@@ -133,7 +119,6 @@
     });
     if (nearest !== pinned) {
       pinned?.classList.remove('is-pinned'); nearest?.classList.add('is-pinned'); pinned = nearest;
-      if (nearest) document.getElementById('memory-context').textContent = `${themes[photoThemes[Number(nearest.dataset.index)]][0]} · ${String(Number(nearest.dataset.index) + 1).padStart(2, '0')} / ${photos.length}`;
     }
     if (moving) scheduleMotion(); else lastMotion = 0;
   }

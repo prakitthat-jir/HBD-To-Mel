@@ -381,10 +381,8 @@ for (const width of [1280, 390]) test(`gallery is read-only at ${width}px`, asyn
   assert.ok(compact.imageHeight < 230);
   assert.match(await page.locator('.memory-card img').first().getAttribute('src'), /m13-640/);
   assert.notEqual(await page.locator('.memory-caption').first().textContent(), 'old draft');
-  await page.locator('#memory-filters [data-theme="outside"]').click();
-  assert.equal(await page.locator('.memory-card:not([hidden])').count(), 8);
-  assert.equal(await page.locator('.memory-card:not([hidden]):not([data-theme="outside"])').count(), 0);
-  await page.locator('#memory-filters [data-theme="all"]').click();
+  assert.equal(await page.locator('#memory-filters, .board-context').count(), 0);
+  assert.equal(await page.locator('.memory-card img').first().evaluate(img => getComputedStyle(img).objectFit), 'cover');
   assert.equal(await page.locator('.memory-card:not([hidden])').count(), 26);
   await page.locator('.memory-card').first().scrollIntoViewIfNeeded();
   await page.locator('.memory-card img').first().evaluate(img => img.decode());
