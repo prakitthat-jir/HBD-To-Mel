@@ -29,23 +29,6 @@
     ["S__21708804_0","เด็กที่ไหนคั้บเนี่ยยย ขอให้โตไปไม่ดื้อ ไม่กวนนะหนู ดีใจที่ได้เห็นเติบโตมาจนถึงทุกวันนี้55555 ขอบคุณที่โตมาจ่ะ","ความทรงจำเพิ่มเติม รูปที่ 1",[640,551,1125,968]]
   ];
   const gallery = document.getElementById('memory-gallery');
-  const ORDER_STORAGE_KEY = 'hbd-mel-photo-order-2026-09-16T03:11:32.388Z';
-  try {
-    const savedOrder = JSON.parse(localStorage.getItem(ORDER_STORAGE_KEY) || '[]');
-    if (Array.isArray(savedOrder)) {
-      const rank = new Map(savedOrder.map((id, index) => [id, index]));
-      photos.sort((a, b) => (rank.get(a[0]) ?? Infinity) - (rank.get(b[0]) ?? Infinity));
-    }
-  } catch { /* The published order remains available without storage. */ }
-  // Published captions from the author's export. A new storage namespace keeps
-  // older local drafts from overriding this published edition; old data is retained.
-  const CAPTION_STORAGE_KEY = "hbd-mel-captions-2026-09-16T04:04:12.953Z";
-  let savedCaptions = {};
-  try {
-    const saved = JSON.parse(localStorage.getItem(CAPTION_STORAGE_KEY) || '{}');
-    if (saved && typeof saved === 'object' && !Array.isArray(saved)) savedCaptions = saved;
-  } catch { /* A blocked storage API must not prevent opening the album. */ }
-  photos.forEach(photo => { if (typeof savedCaptions[photo[0]] === 'string') photo[1] = savedCaptions[photo[0]].slice(0, 240); });
   const viewer = document.getElementById('photo-viewer');
   const image = document.getElementById('photo-full');
   const thumbnails = document.getElementById('photo-thumbnails');
@@ -58,50 +41,6 @@
   let current = 0, opener = null, previousOverflow = '', revision = 0, drag = null;
   let imageAnimation = null, dialogAnimation = null;
   const thumbButtons = [];
-  const photoElements = new Map();
-  const orderToolbar = document.createElement('div'); orderToolbar.className = 'photo-order-toolbar';
-  const orderToggle = document.createElement('button'); orderToggle.type = 'button'; orderToggle.className = 'btn btn-ghost';
-  orderToggle.textContent = 'จัดเรียงรูป ↕'; orderToggle.setAttribute('aria-pressed', 'false');
-  const orderStatus = document.createElement('p'); orderStatus.setAttribute('role', 'status');
-  orderStatus.textContent = 'จัดลำดับรูปได้ด้วยตัวเอง ลำดับจะบันทึกในเบราว์เซอร์นี้';
-  orderToolbar.append(orderToggle, orderStatus); gallery.before(orderToolbar);
-  orderToggle.addEventListener('click', () => {
-    const editing = orderToggle.getAttribute('aria-pressed') !== 'true';
-    orderToggle.setAttribute('aria-pressed', String(editing));
-    orderToggle.textContent = editing ? 'เรียงเสร็จแล้ว ✓' : 'จัดเรียงรูป ↕';
-    photoElements.forEach(({ controls }) => { controls.hidden = !editing; });
-  });
-
-  function movePhoto(file, target) {
-    const from = photos.findIndex(photo => photo[0] === file);
-    if (from === target) return;
-    const activeFile = photos[current][0];
-    const focused = document.activeElement;
-    photos.splice(target, 0, photos.splice(from, 1)[0]);
-    current = photos.findIndex(photo => photo[0] === activeFile);
-    revision++;
-    thumbButtons.length = 0;
-    photos.forEach(([id, , alt], index) => {
-      const { card, button, number, input, thumb, position } = photoElements.get(id);
-      card.dataset.index = index;
-      number.textContent = `MEMORY ${String(index + 1).padStart(2, '0')} / ${photos.length} ♡`;
-      button.setAttribute('aria-label', `ดูรูป ${index + 1}: ${alt}`);
-      input.setAttribute('aria-label', `แคปชั่นรูปที่ ${index + 1}`);
-      thumb.setAttribute('aria-label', `ไปยังรูป ${index + 1}`);
-      thumb.setAttribute('aria-current', String(index === current));
-      position.value = String(index);
-      gallery.append(card); thumbnails.append(thumb); thumbButtons.push(thumb);
-    });
-    focused?.focus({ preventScroll: true });
-    photoElements.get(file).card.scrollIntoView({ block: 'nearest', behavior: 'instant' });
-    try {
-      localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(photos.map(photo => photo[0])));
-      orderStatus.textContent = `ย้ายรูปไปลำดับที่ ${target + 1} แล้ว · บันทึกในเบราว์เซอร์นี้แล้ว ♡`;
-    } catch {
-      orderStatus.textContent = 'เรียงรูปแล้ว แต่บันทึกในเบราว์เซอร์ไม่ได้ กรุณาดาวน์โหลดลำดับรูปและแคปชั่นเก็บไว้';
-    }
-  }
-
   function commitPhoto(index, direction) {
     const [file, text, alt] = photos[index];
     imageAnimation?.cancel();
@@ -175,20 +114,6 @@
     const cap = document.createElement('span'); cap.className = 'memory-caption'; cap.textContent = text;
     const number = document.createElement('span'); number.className = 'memory-number'; number.textContent = `MEMORY ${String(index + 1).padStart(2, '0')} / ${photos.length} ♡`;
     button.append(img, cap, number); card.append(button); gallery.append(card);
-    const editor = document.createElement('details'); editor.className = 'caption-editor';
-    const summary = document.createElement('summary'); summary.textContent = '✎ แก้ไขแคปชั่น';
-    const input = document.createElement('textarea'); input.value = text; input.maxLength = 240; input.rows = 3;
-    input.setAttribute('aria-label', `แคปชั่นรูปที่ ${index + 1}`);
-    const save = document.createElement('button'); save.type = 'button'; save.textContent = 'บันทึกแคปชั่น';
-    const status = document.createElement('p'); status.setAttribute('role', 'status');
-    editor.append(summary, input, save, status); card.append(editor);
-    save.addEventListener('click', () => {
-      const photoIndex = photos.findIndex(photo => photo[0] === file);
-      photos[photoIndex][1] = input.value; cap.textContent = input.value; savedCaptions[file] = input.value;
-      if (current === photoIndex) caption.textContent = input.value;
-      try { localStorage.setItem(CAPTION_STORAGE_KEY, JSON.stringify(savedCaptions)); status.textContent = 'บันทึกในเครื่องนี้แล้ว ♡'; }
-      catch { status.textContent = 'แสดงข้อความแล้ว แต่เครื่องนี้บันทึกถาวรไม่ได้'; }
-    });
     revealObserver.observe(card);
 
     const thumb = document.createElement('button'); thumb.type = 'button';
@@ -199,19 +124,6 @@
       const photoIndex = photos.findIndex(photo => photo[0] === file);
       show(photoIndex, photoIndex >= current ? 1 : -1);
     });
-    const controls = document.createElement('div'); controls.className = 'photo-order-controls'; controls.hidden = true;
-    const label = document.createElement('label'); label.textContent = 'ย้ายไปลำดับที่';
-    const position = document.createElement('select');
-    position.setAttribute('aria-label', `ลำดับรูป: ${alt}`);
-    photos.forEach((_, i) => {
-      const option = document.createElement('option'); option.value = String(i); option.textContent = String(i + 1);
-      position.append(option);
-    });
-    position.value = String(index);
-    position.addEventListener('change', () => movePhoto(file, Number(position.value)));
-    label.append(position); controls.append(label); card.append(controls);
-    photoElements.set(file, { card, button, number, input, thumb, position, controls });
-
     let frame = 0;
     card.addEventListener('pointermove', event => {
       if (!finePointer.matches || reducedMotion.matches || event.pointerType === 'touch') return;
@@ -236,18 +148,6 @@
       ], {duration: 300, easing: 'cubic-bezier(.22,1,.36,1)'});
       document.getElementById('photo-close').focus();
     });
-  });
-
-  document.getElementById('btn-export-captions').addEventListener('click', () => {
-    // Include the current textarea values, including edits not yet saved, and key
-    // them by stable photo ID so an exported caption cannot drift to another photo.
-    const inputs = gallery.querySelectorAll('.caption-editor textarea');
-    const data = { version: 2, exportedAt: new Date().toISOString(), photoOrder: photos.map(photo => photo[0]), captions: Object.fromEntries(photos.map(([file, text], index) => [file, inputs[index]?.value ?? text])) };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
-    const url = URL.createObjectURL(blob), link = document.createElement('a');
-    link.href = url; link.download = 'mel-latest-captions.json'; link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 30000);
-    document.getElementById('caption-export-status').textContent = 'ดาวน์โหลดแล้ว ส่งไฟล์ mel-latest-captions.json ให้ผู้สร้างเพื่ออัปเดตลำดับรูปและแคปชั่นบนเว็บไซต์';
   });
 
   image.addEventListener('pointerdown', event => {

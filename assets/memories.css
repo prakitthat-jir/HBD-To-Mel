@@ -40,10 +40,3 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--primary);outline-of
 @media(max-width:640px){.memory-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:25px 16px;padding:12px 5px 25px}.memory-card{padding:7px 7px 0}.memory-caption{font-size:15px;padding:11px 2px 4px}.memory-number{font-size:8px;letter-spacing:1px}.album-intro{padding:24px 60px 24px 20px}.album-intro p{font-size:16px}.album-sticker{right:-3px;width:68px;height:68px;font-size:13px}.album-ending{font-size:17px}#photo-caption{font-size:19px}}
 @media(prefers-reduced-motion:reduce){.memory-card,#photo-thumbnails button{transition:none}.album-sticker{animation:none}.memory-card{--tilt-x:0deg!important;--tilt-y:0deg!important;--lift:0px!important}}
 .memory-caption,#photo-caption{white-space:pre-wrap}
-.photo-order-toolbar{text-align:center;margin:20px 0;color:var(--muted)}
-.photo-order-toolbar p{font-size:14px;margin-top:10px}
-.photo-order-controls{border-top:1px solid var(--line);padding:12px 0;color:var(--muted);font-size:14px}
-.photo-order-controls[hidden]{display:none}
-.photo-order-controls label{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
-.photo-order-controls select{min-width:60px;min-height:44px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--primary-soft);color:var(--primary-dark);font:inherit;cursor:pointer}
-.photo-order-controls select:focus-visible{outline:3px solid var(--primary);outline-offset:3px}

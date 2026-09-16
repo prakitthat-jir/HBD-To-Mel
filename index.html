@@ -517,10 +517,16 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 .envelope.open .seal{ opacity:0; transform: translate(-50%,-50%) scale(.4) }
 .envelope.open .env-paper{ transform: translateY(-80%) }
 
+#letter-main-text{
+  line-height:2em;
+  white-space:pre-line;
+  overflow-wrap:break-word;
+  background-image:linear-gradient(to bottom, transparent calc(2em - 1px), rgba(200,120,140,.2) calc(2em - 1px));
+  background-size:100% 2em;
+  background-position:0 -.2em;
+}
 .letter-paper{
-  background:
-    repeating-linear-gradient(180deg, transparent 0 33px, rgba(200,120,140,.13) 33px 34px),
-    linear-gradient(180deg,#fffdf8,#fff7f1);
+  background: linear-gradient(180deg,#fffdf8,#fff7f1);
   border:1px solid rgba(200,120,140,.28);
 }
 
@@ -551,7 +557,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 }
 .chapter-navigation{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:28px auto 0}.chapter-navigation .btn{font-size:12px;padding:10px 15px}.step{position:relative;cursor:pointer}.step small{position:absolute;right:1px;bottom:0;font-size:9px;background:var(--primary-soft);border-radius:8px;padding:0 3px}.step:focus-visible{outline:2px solid var(--primary);outline-offset:3px}.step:disabled{cursor:not-allowed}
 </style>
-<link rel="stylesheet" href="assets/memories.css" />
+<link rel="stylesheet" href="assets/memories.css?v=20260916-reader" />
 <link rel="stylesheet" href="assets/cake-decorator.css" />
 </head>
 <body class="antialiased">
@@ -761,7 +767,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 
     <div class="album-intro"><span class="font-script">Dear Mel,</span><p>นี่คือรูปของเธอวัย 24 ผ่านมุมมองของฉัน<br />ขอบคุณที่ผ่านเข้ามาในชีวิต เธอเติบโตขึ้นเยอะเลย (โตด้านข้าง)</p><span class="album-sticker" aria-hidden="true">made with<br />♡ & smiles</span></div>
     <p class="album-tip">เลื่อนดูรอยยิ้ม · แตะเปิดรูป · ปัดซ้าย–ขวาเพื่อดูต่อ ✨</p>
-    <div id="memory-gallery" class="memory-grid"></div><div class="caption-export"><button id="btn-export-captions" class="btn btn-ghost" type="button">ดาวน์โหลดลำดับรูปและแคปชั่น 📥</button><p id="caption-export-status" class="text-xs mt-2" role="status" style="color:var(--muted)">ดาวน์โหลดไฟล์เพื่อส่งให้ผู้สร้างอัปเดตลำดับรูปและแคปชั่นบนเว็บไซต์</p></div>
+    <div id="memory-gallery" class="memory-grid"></div>
     <p class="album-ending font-cute">รูปอาจหยุดเวลาไม่ได้… แต่เก็บรอยยิ้มไว้ได้เสมอ 💌</p>
 
     <button id="btn-goto-cake" class="btn btn-primary">ไปต่อ</button>
@@ -1254,8 +1260,11 @@ Happy 25th birthday, P'Mel.`;
     if (state.log.length === QUIZ.length && Array.isArray(savedProgress.visited)) savedProgress.visited.filter(name => chapterOrder.includes(name)).forEach(name => visitedChapters.add(name));
   }
   function saveQuizProgress() { saveJSON(KEY.progress, { log: state.log, committed: quizCommitted, visited: [...visitedChapters] }); }
+  function canNavigateChapters() {
+    return !["screen-lock", "screen-landing", "screen-quiz"].includes(document.querySelector(".screen.active")?.id);
+  }
   function navigateChapter(name) {
-    if (!visitedChapters.has(name) || $("screen-lock").classList.contains("active")) return;
+    if (!canNavigateChapters() || !chapterOrder.includes(name)) return;
     if (name === "quiz") {
       if (state.log.length === QUIZ.length) { goToResult(); return; }
       if (!quizStarted) { quizStarted = true; renderQuestion(); }
@@ -1298,10 +1307,10 @@ Happy 25th birthday, P'Mel.`;
       const i = order.indexOf(s.dataset.step);
       s.classList.toggle("now", i === at);
       s.classList.toggle("done", visitedChapters.has(s.dataset.step) && i !== at);
-      s.disabled = !visitedChapters.has(s.dataset.step);
+      s.disabled = !canNavigateChapters();
       if (i === at) s.setAttribute("aria-current", "step"); else s.removeAttribute("aria-current");
     });
-    document.querySelectorAll("[data-chapter-direction]").forEach(button => { const target = order[at + Number(button.dataset.chapterDirection)]; button.disabled = !target || !visitedChapters.has(target); });
+    document.querySelectorAll("[data-chapter-direction]").forEach(button => { const target = order[at + Number(button.dataset.chapterDirection)]; button.disabled = !target || !canNavigateChapters(); });
   }
 
   function toast(msg) {
@@ -2108,7 +2117,7 @@ Happy 25th birthday, P'Mel.`;
   <div id="photo-thumbnails" aria-label="เลือกรูปภาพ"></div>
   <div class="viewer-controls"><button id="photo-prev" type="button" aria-label="รูปก่อนหน้า">←</button><span>เก็บไว้ในความทรงจำ ♡</span><button id="photo-next" type="button" aria-label="รูปถัดไป">→</button></div>
 </dialog>
-<script src="assets/memories.js?v=20260916-040412"></script>
+<script src="assets/memories.js?v=20260916-reader"></script>
 <script src="assets/music.js"></script>
 <dialog id="cake-catalog" aria-labelledby="cake-catalog-title"><div class="catalog-heading"><div><small>THE DECORATION BOUTIQUE</small><h2 id="cake-catalog-title">เลือกชิ้นที่ใช่ ให้เค้กของเธอ</h2></div><button id="cake-catalog-close" type="button" aria-label="ปิดตู้ของตกแต่ง">×</button></div><div class="catalog-layout"><div class="catalog-preview"><canvas id="cake-preview-canvas" width="360" height="330" aria-label="โมเดลของตกแต่ง 3D ชิ้นจริงที่กำลังหมุน"></canvas><h3 id="cake-preview-name"></h3><p>โมเดลเดียวกับชิ้นที่จะวางบนเค้ก</p><label>ขนาดชิ้น <input id="cake-preview-scale" type="range" min="0.55" max="1.8" step="0.05" value="1"></label><button id="cake-preview-use" type="button" class="btn btn-primary">เลือกชิ้นนี้ แล้ววางบนเค้ก</button></div><div id="cake-catalog-grid"></div></div></dialog><script src="assets/cake-loader.js"></script>
 </body>

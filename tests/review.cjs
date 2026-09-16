@@ -92,7 +92,10 @@ for (const width of [1280, 390]) test(`full birthday flow at ${width}px, single-
   assert.ok((await page.locator('#result-answers').textContent()).includes(payload));
   assert.equal(await page.evaluate(() => window.injected), undefined);
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('hbd-mel-history')).length), 1);
-  await page.locator('#btn-goto-gallery').click();
+  assert.equal(await page.locator('#stepbar button:enabled').count(), 5);
+  await page.locator('#stepbar [data-step="letter"]').click();
+  await page.locator('#screen-letter.active').waitFor();
+  await page.locator('#stepbar [data-step="gallery"]').click();
   await page.locator('#screen-gallery.active').waitFor();
   assert.equal(await page.locator('.memory-card').count(), 26);
   for (const photo of await page.locator('.memory-card img').all()) {
@@ -135,6 +138,10 @@ for (const width of [1280, 390]) test(`full birthday flow at ${width}px, single-
   await page.locator('#screen-letter.active').waitFor();
   await page.locator('#envelope').click();
   await page.locator('#letter-content').waitFor({ state: 'visible' });
+  await page.screenshot({ path: path.join(__dirname, '..', 'test-results', `letter-${width}.png`), fullPage: true, animations: 'disabled' });
+  const ruled = await page.locator('#letter-main-text').evaluate(p => { const s = getComputedStyle(p); return { line: parseFloat(s.lineHeight), grid: parseFloat(s.backgroundSize.split(' ')[1]) }; });
+  assert.ok(Math.abs(ruled.line - ruled.grid) < .1);
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   await page.locator('#btn-show-short').click();
   await page.locator('#modal-ok').click();
   await page.locator('#short-reveal.show').waitFor();
@@ -147,7 +154,7 @@ for (const width of [1280, 390]) test(`full birthday flow at ${width}px, single-
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('hbd-mel-history')).length),1);
   await page.locator('#stepbar [data-step="letter"]').click();await page.locator('#screen-letter.active').waitFor();await page.locator('#letter-content').waitFor({state:'visible'});
   await page.reload();await page.locator('#lock-input').fill('23092001');await page.locator('#btn-unlock').click();await page.locator('#screen-landing.active').waitFor();
-  await page.locator('#stepbar [data-step="quiz"]').click();await page.locator('#screen-result.active').waitFor();
+  await page.locator('#btn-start').click();await page.locator('#screen-result.active').waitFor();
   assert.equal(await page.locator('#result-score').textContent(),'10/10');assert.equal(await page.locator('.quiz-saved-answer').count(),10);assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('hbd-mel-history')).length),1);assert.equal(quizPosts,1,'review and refresh do not submit the quiz again');
 });
 
@@ -346,48 +353,20 @@ test('storage quota failure retains successive comments in memory', async t => {
   assert.equal(await page.locator('.cmt').count(), 2);
 });
 
-for (const width of [1280, 390]) test(`photo order preserves captions, viewer and export at ${width}px`, async t => {
-  const page = await setup(t, { viewport: { width, height: 900 } });
+for (const width of [1280, 390]) test(`gallery is read-only at ${width}px`, async t => {
+  const page = await setup(t, { viewport: { width, height: 900 }, init: () => {
+    localStorage.setItem('hbd-mel-photo-order-2026-09-16T03:11:32.388Z', JSON.stringify(['S__21708804_0', 'm13']));
+    localStorage.setItem('hbd-mel-captions-2026-09-16T04:04:12.953Z', JSON.stringify({m13: 'old draft'}));
+  }});
   await page.locator('#btn-goto-gallery').evaluate(b => b.click());
   await page.locator('#screen-gallery.active').waitFor();
-  await page.locator('.photo-order-toolbar button').click();
-  const added = page.locator('.memory-card').filter({ has: page.locator('img[src$="S__21708804_0-640.webp"]') });
-  await added.locator('summary').click();
-  await added.locator('textarea').fill('รูปใหม่ที่ย้ายแล้ว');
-  await added.locator('select').selectOption('0');
-  assert.match(await page.locator('.memory-card').first().locator('img').getAttribute('src'), /S__21708804_0/);
-  await added.locator('.caption-editor button').click();
-  await added.locator('button').first().click();
-  assert.match(await page.locator('#photo-full').getAttribute('src'), /S__21708804_0/);
-  assert.equal(await page.locator('#photo-caption').textContent(), 'รูปใหม่ที่ย้ายแล้ว');
-  await page.locator('#photo-next').click();
-  await page.waitForFunction(() => document.querySelector('#photo-full').src.includes('/m13-'));
-  await page.locator('#photo-thumbnails button').first().click();
-  await page.waitForFunction(() => document.querySelector('#photo-full').src.includes('/S__21708804_0-'));
+  assert.equal(await page.locator('.caption-editor, .photo-order-toolbar, .photo-order-controls, #btn-export-captions').count(), 0);
+  assert.equal(await page.locator('.memory-card').count(), 26);
+  assert.match(await page.locator('.memory-card img').first().getAttribute('src'), /m13-640/);
+  assert.notEqual(await page.locator('.memory-caption').first().textContent(), 'old draft');
+  await page.locator('.memory-card button').last().click();
+  assert.match(await page.locator('#photo-caption').textContent(), /เด็กที่ไหน/);
   await page.keyboard.press('Escape');
-  const download = page.waitForEvent('download');
-  await page.locator('#btn-export-captions').click();
-  const exported = JSON.parse(fs.readFileSync(await (await download).path(), 'utf8'));
-  assert.equal(exported.photoOrder[0], 'S__21708804_0');
-  assert.equal(new Set(exported.photoOrder).size, 26);
-  assert.equal(exported.captions.S__21708804_0, 'รูปใหม่ที่ย้ายแล้ว');
-  await page.reload();
-  assert.match(await page.locator('.memory-card').first().locator('img').getAttribute('src'), /S__21708804_0/);
-  assert.equal(await page.locator('.memory-card').first().locator('textarea').inputValue(), 'รูปใหม่ที่ย้ายแล้ว');
-});
-
-test('captions persist independently and render user text safely',async t=>{
-  const page=await setup(t);await page.locator('#btn-goto-gallery').evaluate(b=>b.click());await page.locator('#screen-gallery.active').waitFor();
-  const cards=page.locator('.memory-card');
-  for(let i=0;i<2;i++){
-    await cards.nth(i).locator('summary').click();await cards.nth(i).locator('textarea').fill(i?'Another memory':'<img src=x onerror=alert(1)>');await cards.nth(i).locator('.caption-editor button').click();
-  }
-  await page.reload();await page.locator('#btn-goto-gallery').evaluate(b=>b.click());await page.locator('#screen-gallery.active').waitFor();
-  assert.equal(await cards.nth(0).locator('.memory-caption').textContent(),'<img src=x onerror=alert(1)>');assert.equal(await cards.nth(1).locator('.memory-caption').textContent(),'Another memory');assert.equal(await cards.locator('.memory-caption img').count(),0);
-  await cards.nth(0).locator('button').first().click();assert.equal(await page.locator('#photo-caption').textContent(),'<img src=x onerror=alert(1)>');
-  await page.keyboard.press('Escape');await cards.nth(0).locator('summary').click();await cards.nth(0).locator('textarea').fill('แคปชั่นล่าสุดที่ยังไม่ได้กดบันทึก');
-  const download=page.waitForEvent('download');await page.locator('#btn-export-captions').click();const file=await download;assert.equal(file.suggestedFilename(),'mel-latest-captions.json');
-  const exported=JSON.parse(fs.readFileSync(await file.path(),'utf8'));assert.equal(Object.keys(exported.captions).length,26);assert.equal(exported.captions.m13,'แคปชั่นล่าสุดที่ยังไม่ได้กดบันทึก');assert.equal(exported.captions.m1,'Another memory');
 });
 
 for(const width of [1280,390])test(`3D cake studio placement, rotation, editing and export at ${width}px`,async t=>{
@@ -482,13 +461,24 @@ for(const width of [1280,390])test(`tier flavors, real-model catalog and individ
   await page.locator('#cake-continue').click();await page.locator('#screen-letter.active').waitFor();
 });
 
-test('chapter navigation preserves locked answers and the current unanswered question',async t=>{
-  const page=await setup(t);assert.equal(await page.locator('#stepbar [data-step="cake"]').isDisabled(),true);
-  await page.locator('#btn-start').click();await page.locator('#quiz-choices [data-key="B"]').click();await page.locator('#btn-next').waitFor({state:'visible'});
-  await page.locator('#stepbar [data-step="landing"]').click();await page.locator('#screen-landing.active').waitFor();await page.locator('#btn-start').click();await page.locator('#screen-quiz.active').waitFor();
-  await page.locator('#quiz-choices [data-key="C"]').evaluate(b=>b.click());assert.match(await page.locator('#quiz-score-label').textContent(),/1 คะแนน/);
-  await next(page);assert.match(await page.locator('#quiz-progress-label').textContent(),/ข้อ 2/);
-  await page.locator('#stepbar [data-step="landing"]').click();await page.locator('#screen-landing.active').waitFor();await page.locator('#stepbar [data-step="quiz"]').click();await page.locator('#screen-quiz.active').waitFor();assert.match(await page.locator('#quiz-progress-label').textContent(),/ข้อ 2/);
-  await page.reload();await page.locator('#lock-input').fill('23092001');await page.locator('#btn-unlock').click();await page.locator('#screen-landing.active').waitFor();await page.locator('#btn-start').click();assert.match(await page.locator('#quiz-progress-label').textContent(),/ข้อ 2/);
-  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('hbd-mel-quiz-progress-v1')));assert.equal(saved.log.length,1);assert.equal(saved.log[0].picked,'Nong Meaow');
+test('chapter navigation is locked before and during the quiz, including after reload', async t => {
+  const page = await setup(t);
+  assert.equal(await page.locator('#stepbar button:enabled').count(), 0);
+  assert.equal(await page.locator('#screen-landing .chapter-navigation button:enabled').count(), 0);
+  await page.locator('#stepbar [data-step="gallery"]').evaluate(b => b.dispatchEvent(new MouseEvent('click')));
+  assert.equal(await page.locator('#screen-landing').evaluate(s => s.classList.contains('active')), true);
+  await page.locator('#btn-start').click();
+  await page.locator('#screen-quiz.active').waitFor();
+  assert.equal(await page.locator('#stepbar button:enabled').count(), 0);
+  assert.equal(await page.locator('#screen-quiz .chapter-navigation button:enabled').count(), 0);
+  await page.locator('#quiz-choices [data-key="B"]').click();
+  await next(page);
+  await page.locator('#stepbar [data-step="landing"]').evaluate(b => b.dispatchEvent(new MouseEvent('click')));
+  assert.equal(await page.locator('#screen-quiz').evaluate(s => s.classList.contains('active')), true);
+  await page.reload();
+  await page.locator('#lock-input').fill('23092001'); await page.locator('#btn-unlock').click();
+  await page.locator('#screen-landing.active').waitFor();
+  assert.equal(await page.locator('#stepbar button:enabled').count(), 0);
+  await page.locator('#btn-start').click();
+  assert.match(await page.locator('#quiz-progress-label').textContent(), /ข้อ 2/);
 });
