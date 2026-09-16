@@ -557,7 +557,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 }
 .chapter-navigation{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:28px auto 0}.chapter-navigation .btn{font-size:12px;padding:10px 15px}.step{position:relative;cursor:pointer}.step small{position:absolute;right:1px;bottom:0;font-size:9px;background:var(--primary-soft);border-radius:8px;padding:0 3px}.step:focus-visible{outline:2px solid var(--primary);outline-offset:3px}.step:disabled{cursor:not-allowed}
 </style>
-<link rel="stylesheet" href="assets/memories.css?v=20260916-reader" />
+<link rel="stylesheet" href="assets/memories.css?v=20260916-scrapbook" />
 <link rel="stylesheet" href="assets/cake-decorator.css" />
 </head>
 <body class="antialiased">
@@ -761,13 +761,17 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
      ========================================================================== -->
 <section id="screen-gallery" class="screen">
   <div class="wrap max-w-3xl text-center">
-    <p class="chip mx-auto mb-3">Chapter 2</p>
-    <h2 class="text-2xl md:text-3xl font-medium mb-1">แด่เธอในวัย 24</h2>
-    <p class="text-sm mb-8 font-cute" style="color:var(--muted)">ผ่านมุมมองของฉัน 📸</p>
-
-    <div class="album-intro"><span class="font-script">Dear Mel,</span><p>นี่คือรูปของเธอวัย 24 ผ่านมุมมองของฉัน<br />ขอบคุณที่ผ่านเข้ามาในชีวิต เธอเติบโตขึ้นเยอะเลย (โตด้านข้าง)</p><span class="album-sticker" aria-hidden="true">made with<br />♡ & smiles</span></div>
-    <p class="album-tip">เลื่อนดูรอยยิ้ม · แตะเปิดรูป · ปัดซ้าย–ขวาเพื่อดูต่อ ✨</p>
-    <div id="memory-gallery" class="memory-grid"></div>
+    <header class="scrapbook-heading">
+      <p class="scrapbook-kicker">CHAPTER 02 <span>—</span> A PERSONAL ARCHIVE</p>
+      <h2>Little moments,<br /><em>kept forever.</em></h2>
+      <p class="scrapbook-subtitle">แด่เธอในวัย 24 · ผ่านมุมมองของฉัน</p>
+      <span class="archive-stamp" aria-hidden="true">OUR LITTLE<br />MEMORIES<br /><b>♡ 26 ♡</b></span>
+    </header>
+    <div class="album-intro"><span class="font-script">Dear Mel,</span><p>นี่คือรูปของเธอวัย 24 ผ่านมุมมองของฉัน<br />ขอบคุณที่ผ่านเข้ามาในชีวิต เธอเติบโตขึ้นเยอะเลย (โตด้านข้าง)</p><span class="album-sticker" aria-hidden="true">a little<br />love note ↗</span></div>
+    <nav id="memory-filters" class="memory-filters" aria-label="เลือกเรื่องราวในอัลบั้ม"></nav>
+    <div class="board-context"><span class="context-pin" aria-hidden="true"></span><span id="memory-context">ทุกความทรงจำ</span><span class="board-context-hint">SCROLL TO EXPLORE ↓</span></div>
+    <p class="album-tip" id="memory-filter-status" role="status">26 รูป · แตะรูปเพื่อเปิดเรื่องราวที่เชื่อมกัน</p>
+    <div id="memory-gallery" class="memory-grid" aria-label="บอร์ดความทรงจำ"></div>
     <p class="album-ending font-cute">รูปอาจหยุดเวลาไม่ได้… แต่เก็บรอยยิ้มไว้ได้เสมอ 💌</p>
 
     <button id="btn-goto-cake" class="btn btn-primary">ไปต่อ</button>
@@ -2121,12 +2125,14 @@ Happy 25th birthday, P'Mel.`;
 </script>
 <dialog id="photo-viewer" aria-labelledby="photo-caption">
   <div class="viewer-top"><span id="photo-count"></span><button id="photo-close" type="button" aria-label="ปิดรูปภาพ">✕</button></div>
-  <img id="photo-full" alt="" />
-  <p id="photo-caption" class="font-cute"></p>
+  <div class="photo-cloud">
+    <figure class="photo-focus"><div class="photo-image-window"><img id="photo-full" alt="" /></div><figcaption id="photo-caption" class="font-cute"></figcaption><span class="focus-note" aria-hidden="true">a moment worth keeping ♡</span></figure>
+    <div id="photo-related" aria-label="รูปที่มีเรื่องราวเกี่ยวข้อง"></div>
+  </div>
   <div id="photo-thumbnails" aria-label="เลือกรูปภาพ"></div>
   <div class="viewer-controls"><button id="photo-prev" type="button" aria-label="รูปก่อนหน้า">←</button><span>เก็บไว้ในความทรงจำ ♡</span><button id="photo-next" type="button" aria-label="รูปถัดไป">→</button></div>
 </dialog>
-<script src="assets/memories.js?v=20260916-reader"></script>
+<script src="assets/memories.js?v=20260916-scrapbook"></script>
 <script src="assets/music.js"></script>
 <dialog id="cake-catalog" aria-labelledby="cake-catalog-title"><div class="catalog-heading"><div><small>THE DECORATION BOUTIQUE</small><h2 id="cake-catalog-title">เลือกชิ้นที่ใช่ ให้เค้กของเธอ</h2></div><button id="cake-catalog-close" type="button" aria-label="ปิดตู้ของตกแต่ง">×</button></div><div class="catalog-layout"><div class="catalog-preview"><canvas id="cake-preview-canvas" width="360" height="330" aria-label="โมเดลของตกแต่ง 3D ชิ้นจริงที่กำลังหมุน"></canvas><h3 id="cake-preview-name"></h3><p>โมเดลเดียวกับชิ้นที่จะวางบนเค้ก</p><label>ขนาดชิ้น <input id="cake-preview-scale" type="range" min="0.55" max="1.8" step="0.05" value="1"></label><button id="cake-preview-use" type="button" class="btn btn-primary">เลือกชิ้นนี้ แล้ววางบนเค้ก</button></div><div id="cake-catalog-grid"></div></div></dialog><script src="assets/cake-loader.js?v=20260916-large-topper"></script>
 </body>

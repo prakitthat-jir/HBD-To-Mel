@@ -41,6 +41,112 @@
   let current = 0, opener = null, previousOverflow = '', revision = 0, drag = null;
   let imageAnimation = null, dialogAnimation = null;
   const thumbButtons = [];
+  const cards = [];
+  // Editorial groupings use the supplied captions; the published photo order stays intact.
+  const themes = {
+    all: ['ทุกความทรงจำ', 'ALL MOMENTS'],
+    together: ['เราและเพื่อน', 'TOGETHER'],
+    outside: ['วันออกไปเที่ยว', 'OUT & ABOUT'],
+    everyday: ['วันธรรมดาที่พิเศษ', 'LITTLE DAYS'],
+    keepsake: ['ชิ้นส่วนความทรงจำ', 'KEEPSAKES']
+  };
+  const themeIds = {
+    together: ['m2','m3','m4','m5','m6','m9','m10','m14','m20'],
+    outside: ['m13','m7','m8','m17','m18','S__21708808_0','S__21708807_0','S__21708806_0'],
+    everyday: ['m1','m11','m12','S__21708818_0','S__21708819_0'],
+    keepsake: ['m19','S__21708813_0','S__21708815_0','S__21708804_0']
+  };
+  const photoThemes = photos.map(([file]) => Object.keys(themeIds).find(key => themeIds[key].includes(file)) || 'keepsake');
+  const related = document.getElementById('photo-related');
+  let layoutFrame = 0;
+  function layoutBoard() {
+    cancelAnimationFrame(layoutFrame);
+    layoutFrame = requestAnimationFrame(() => {
+      if (!gallery.clientWidth) return;
+      const style = getComputedStyle(gallery), row = parseFloat(style.gridAutoRows), gap = parseFloat(style.rowGap);
+      cards.forEach(card => {
+        if (!card.hidden) card.style.gridRowEnd = `span ${Math.ceil((card.offsetHeight + gap) / (row + gap))}`;
+      });
+    });
+  }
+  const sizeObserver = new ResizeObserver(layoutBoard);
+  sizeObserver.observe(gallery);
+  const filterBar = document.getElementById('memory-filters');
+  Object.entries(themes).forEach(([key, [title]]) => {
+    const button = document.createElement('button'); button.type = 'button'; button.textContent = title;
+    button.dataset.theme = key; button.setAttribute('aria-pressed', String(key === 'all'));
+    button.addEventListener('click', () => {
+      [...filterBar.children].forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+      cards.forEach((card, index) => { card.hidden = key !== 'all' && photoThemes[index] !== key; });
+      document.getElementById('memory-context').textContent = title;
+      document.getElementById('memory-filter-status').textContent = `${cards.filter(card => !card.hidden).length} รูป · ${title}`;
+      layoutBoard(); scheduleMotion();
+    });
+    filterBar.append(button);
+  });
+
+  function renderRelated(index) {
+    const focusedSlot = [...related.children].indexOf(document.activeElement);
+    const indices = photos.map((_, i) => i).filter(i => i !== index).sort((a, b) =>
+      Number(photoThemes[b] === photoThemes[index]) - Number(photoThemes[a] === photoThemes[index]) || Math.abs(a - index) - Math.abs(b - index)
+    ).slice(0, 4);
+    related.replaceChildren();
+    indices.forEach((photoIndex, slot) => {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'related-photo';
+      button.dataset.index = photoIndex;
+      button.setAttribute('aria-label', `ดูรูปที่เกี่ยวข้อง ${photoIndex + 1}: ${photos[photoIndex][2]}`);
+      const preview = document.createElement('img'); preview.src = `assets/photos/${photos[photoIndex][0]}-640.webp`; preview.alt = ''; preview.draggable = false;
+      const label = document.createElement('span'); label.textContent = `${themes[photoThemes[photoIndex]][0]} ↗`;
+      button.append(preview, label); related.append(button);
+      button.addEventListener('click', () => show(photoIndex, photoIndex > current ? 1 : -1));
+      if (!reducedMotion.matches) button.animate([{opacity: 0, translate: `${slot % 2 ? -16 : 16}px 18px`}, {opacity: 1, translate: '0 0'}], {duration: 550, delay: slot * 45, easing: 'cubic-bezier(.22,1.3,.36,1)', fill: 'backwards'});
+    });
+    if (focusedSlot >= 0) related.children[focusedSlot]?.focus({preventScroll: true});
+  }
+
+  // A damped spring follows native scrolling without intercepting wheel or touch input.
+  const visibleCards = new Set();
+  const springStates = new WeakMap();
+  let motionFrame = 0, lastMotion = 0, pinned = null;
+  const visibilityObserver = new IntersectionObserver(entries => {
+    entries.forEach(({target, isIntersecting}) => { if (isIntersecting) visibleCards.add(target); else visibleCards.delete(target); });
+    scheduleMotion();
+  }, {rootMargin: '70px'});
+  function scheduleMotion() {
+    if (!motionFrame && !document.hidden) motionFrame = requestAnimationFrame(updateMotion);
+  }
+  function updateMotion(now) {
+    motionFrame = 0;
+    if (!document.getElementById('screen-gallery').classList.contains('active') || viewer.open || document.hidden) { lastMotion = 0; return; }
+    const dt = Math.min((now - (lastMotion || now - 16)) / 1000, .032); lastMotion = now;
+    let moving = false, nearest = null, distance = Infinity;
+    visibleCards.forEach(card => {
+      if (card.hidden) return;
+      const rect = card.getBoundingClientRect(), center = rect.top + rect.height / 2;
+      if (Math.abs(center - innerHeight * .48) < distance) { nearest = card; distance = Math.abs(center - innerHeight * .48); }
+      const state = springStates.get(card) || {y: 0, velocity: 0};
+      const target = reducedMotion.matches || !finePointer.matches ? 0 : Math.max(-8, Math.min(8, (center - state.y - innerHeight / 2) * .016));
+      state.velocity += ((target - state.y) * 110 - state.velocity * 19) * dt;
+      state.y += state.velocity * dt;
+      card.style.setProperty('--parallax', `${state.y.toFixed(2)}px`); springStates.set(card, state);
+      if (Math.abs(target - state.y) > .08 || Math.abs(state.velocity) > .08) moving = true;
+    });
+    if (nearest !== pinned) {
+      pinned?.classList.remove('is-pinned'); nearest?.classList.add('is-pinned'); pinned = nearest;
+      if (nearest) document.getElementById('memory-context').textContent = `${themes[photoThemes[Number(nearest.dataset.index)]][0]} · ${String(Number(nearest.dataset.index) + 1).padStart(2, '0')} / ${photos.length}`;
+    }
+    if (moving) scheduleMotion(); else lastMotion = 0;
+  }
+  addEventListener('scroll', scheduleMotion, {passive: true});
+  reducedMotion.addEventListener('change', scheduleMotion);
+  document.addEventListener('visibilitychange', scheduleMotion);
+  new MutationObserver(() => { layoutBoard(); scheduleMotion(); }).observe(document.getElementById('screen-gallery'), {attributes: true, attributeFilter: ['class']});
+  viewer.addEventListener('pointermove', event => {
+    if (!finePointer.matches || reducedMotion.matches || event.pointerType === 'touch') return;
+    const rect = viewer.getBoundingClientRect(), x = (event.clientX - rect.left) / rect.width - .5, y = (event.clientY - rect.top) / rect.height - .5;
+    related.style.setProperty('--cloud-x', `${x * 10}px`); related.style.setProperty('--cloud-y', `${y * 8}px`);
+  });
+  viewer.addEventListener('pointerleave', () => { related.style.setProperty('--cloud-x', '0px'); related.style.setProperty('--cloud-y', '0px'); });
   function commitPhoto(index, direction) {
     const [file, text, alt] = photos[index];
     imageAnimation?.cancel();
@@ -48,6 +154,7 @@
     image.src = `assets/photos/${file}-1440.webp`;
     image.alt = alt;
     caption.textContent = text;
+    renderRelated(index);
     count.textContent = `${index + 1} / ${photos.length} · Our little memories`;
     thumbButtons.forEach((button, i) => button.setAttribute('aria-current', String(i === index)));
     const thumb = thumbButtons[index];
@@ -99,6 +206,8 @@
   photos.forEach(([file, text, alt, dimensions], index) => {
     const card = document.createElement('figure');
     card.className = 'memory-card'; card.dataset.index = index;
+    card.dataset.theme = photoThemes[index];
+    card.style.setProperty('--angle', `${((index * 17 + 7) % 61 - 30) / 10}deg`);
     const button = document.createElement('button');
     button.type = 'button';
     button.setAttribute('aria-label', `ดูรูป ${index + 1}: ${alt}`);
@@ -109,11 +218,14 @@
     img.width = thumbWidth; img.height = dimensions ? dimensions[1] : landscape ? 480 : 640;
     img.src = `assets/photos/${file}-640.webp`;
     img.srcset = `assets/photos/${file}-640.webp ${thumbWidth}w, assets/photos/${file}-1440.webp ${fullWidth}w`;
-    img.sizes = '(max-width: 640px) 44vw, 300px';
+    img.sizes = '(max-width: 760px) 44vw, 340px';
     img.alt = alt; img.loading = 'lazy'; img.decoding = 'async'; img.draggable = false;
     const cap = document.createElement('span'); cap.className = 'memory-caption'; cap.textContent = text;
     const number = document.createElement('span'); number.className = 'memory-number'; number.textContent = `MEMORY ${String(index + 1).padStart(2, '0')} / ${photos.length} ♡`;
-    button.append(img, cap, number); card.append(button); gallery.append(card);
+    const tag = document.createElement('span'); tag.className = 'memory-tag'; tag.textContent = themes[photoThemes[index]][1];
+    button.append(img, tag, cap, number); card.append(button); gallery.append(card);
+    if (index % 4 === 0) { const stamp = document.createElement('span'); stamp.className = 'memory-stamp'; stamp.textContent = '♡'; stamp.setAttribute('aria-hidden', 'true'); card.append(stamp); }
+    cards.push(card); sizeObserver.observe(card); visibilityObserver.observe(card);
     revealObserver.observe(card);
 
     const thumb = document.createElement('button'); thumb.type = 'button';
@@ -149,6 +261,8 @@
       document.getElementById('photo-close').focus();
     });
   });
+  document.fonts.ready.then(layoutBoard);
+  layoutBoard();
 
   image.addEventListener('pointerdown', event => {
     if (!event.isPrimary || event.button !== 0) return;
@@ -185,5 +299,6 @@
   viewer.addEventListener('close', () => {
     revision++; drag = null; imageAnimation?.cancel(); dialogAnimation?.cancel(); image.style.transform = '';
     viewer.setAttribute('aria-busy', 'false'); document.body.style.overflow = previousOverflow; opener?.focus();
+    scheduleMotion();
   });
 })();
