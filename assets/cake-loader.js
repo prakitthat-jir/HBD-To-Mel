@@ -2,7 +2,7 @@
 (() => {
   const screen=document.getElementById('screen-cake');let requested=false;
   function load(){if(requested||!screen.classList.contains('active'))return;requested=true;
-    const script=document.createElement('script');script.src='assets/cake3d.bundle.js';
+    const script=document.createElement('script');script.src='assets/cake3d.bundle.js?v=20260916-large-topper';
     script.onerror=()=>{document.getElementById('decorator-status').textContent='โหลดเค้กไม่สำเร็จ กรุณารีเฟรชเพื่อลองอีกครั้ง';};
     document.head.append(script);
   }

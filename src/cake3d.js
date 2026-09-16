@@ -156,15 +156,15 @@ function initialize(){
     }
     if(!cake.topper)return;
     const top=layout(cake.size).at(-1).b+.82;
-    const hoop=mesh(new THREE.TorusGeometry(.53,.014,10,100),gold,base,0,top+.85,-.37);
-    for(const x of [-.34,.34])mesh(new THREE.CylinderGeometry(.009,.009,.65,8),gold,base,x,top+.32,-.37);
-    const label=document.createElement('canvas');label.width=1024;label.height=512;const c=label.getContext('2d');
-    c.textAlign='center';c.fillStyle='#d3a65e';c.font='36px Georgia';c.fillText('H A P P Y  B I R T H D A Y',512,155);c.font='170px Pacifico, cursive';c.fillText('Mel',512,335);c.font='28px Georgia';c.fillText('A LITTLE MAGIC, JUST FOR YOU',512,422);
+    const hoop=mesh(new THREE.TorusGeometry(.66,.018,10,100),gold,base,0,top+.96,-.37);
+    for(const x of [-.4,.4])mesh(new THREE.CylinderGeometry(.011,.011,.72,8),gold,base,x,top+.36,-.37);
+    const label=document.createElement('canvas');label.width=1024;label.height=768;const c=label.getContext('2d');
+    c.textAlign='center';c.fillStyle='#f6d892';c.font='bold 112px Georgia';c.fillText('Happy',512,215);c.fillText('Birthday',512,345);c.font='210px Pacifico, cursive';c.fillText('Mel',512,570);c.font='32px Georgia';c.fillText('A LITTLE MAGIC, JUST FOR YOU',512,665);
     labelTexture=new THREE.CanvasTexture(label);labelTexture.colorSpace=THREE.SRGBColorSpace;
     const labelMat=new THREE.MeshBasicMaterial({map:labelTexture,transparent:true,side:THREE.DoubleSide,depthWrite:false});bodyMaterials.push(labelMat);
-    mesh(new THREE.PlaneGeometry(1.2,.6),labelMat,base,0,top+.85,-.35).castShadow=false;
+    mesh(new THREE.PlaneGeometry(1.35,1.0125),labelMat,base,0,top+.96,-.35).castShadow=false;
     // Small stars crown the gold hoop, rather than using flat emoji sprites.
-    for(const [x,y,s] of [[-.48,top+1.25,.07],[.43,top+1.26,.095],[.1,top+1.47,.055]]){
+    for(const [x,y,s] of [[-.59,top+1.46,.085],[.53,top+1.47,.11],[.1,top+1.73,.065]]){
       const shape=new THREE.Shape();for(let k=0;k<10;k++){const a=k/10*Math.PI*2+Math.PI/2,r=k%2?s*.42:s;if(!k)shape.moveTo(Math.cos(a)*r,Math.sin(a)*r);else shape.lineTo(Math.cos(a)*r,Math.sin(a)*r);}shape.closePath();mesh(new THREE.ExtrudeGeometry(shape,{depth:.018,bevelEnabled:false}),gold,base,x,y,-.37);
     }
   }
