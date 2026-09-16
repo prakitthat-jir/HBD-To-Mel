@@ -150,12 +150,26 @@ for (const width of [1280, 390]) test(`full birthday flow at ${width}px, single-
   await page.locator('#screen-letter [data-chapter-direction="-1"]').click();await page.locator('#screen-cake.active').waitFor();assert.equal(await page.locator('#screen-cake').getAttribute('data-phase'),'show');
   await page.locator('#stepbar [data-step="quiz"]').click();await page.locator('#screen-result.active').waitFor();
   assert.equal(await page.locator('.quiz-saved-answer').count(),10);assert.equal(await page.locator('#result-score').textContent(),'10/10');assert.equal(await page.locator('#quiz-text-input').isVisible(),false);
-  await page.locator('#stepbar [data-step="landing"]').click();await page.locator('#btn-start').click();await page.locator('#screen-result.active').waitFor();
-  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('hbd-mel-history')).length),1);
-  await page.locator('#stepbar [data-step="letter"]').click();await page.locator('#screen-letter.active').waitFor();await page.locator('#letter-content').waitFor({state:'visible'});
-  await page.reload();await page.locator('#lock-input').fill('23092001');await page.locator('#btn-unlock').click();await page.locator('#screen-landing.active').waitFor();
-  await page.locator('#btn-start').click();await page.locator('#screen-result.active').waitFor();
-  assert.equal(await page.locator('#result-score').textContent(),'10/10');assert.equal(await page.locator('.quiz-saved-answer').count(),10);assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('hbd-mel-history')).length),1);assert.equal(quizPosts,1,'review and refresh do not submit the quiz again');
+  const completedProgress = await page.evaluate(() => localStorage.getItem('hbd-mel-quiz-progress-v1'));
+  await page.locator('#stepbar [data-step="landing"]').click();
+  await page.locator('#btn-start').click(); await page.locator('#screen-quiz.active').waitFor();
+  assert.match(await page.locator('#quiz-progress-label').textContent(), /ข้อ 1 \/ 10/);
+  assert.match(await page.locator('#quiz-score-label').textContent(), /0 คะแนน/);
+  assert.equal(await page.locator('#stepbar button:enabled').count(), 0);
+  await page.locator('#quiz-choices [data-key="B"]').click();
+  await page.locator('#btn-next').waitFor({ state: 'visible' });
+  assert.match(await page.locator('#quiz-score-label').textContent(), /1 คะแนน/);
+  const newProgress = await page.evaluate(() => JSON.parse(localStorage.getItem('hbd-mel-quiz-progress-v1')));
+  assert.equal(newProgress.log.length, 1); assert.equal(newProgress.committed, false);
+  // Opening the site with a completed saved attempt must also allow answering.
+  await page.evaluate(value => localStorage.setItem('hbd-mel-quiz-progress-v1', value), completedProgress);
+  await page.reload(); await page.locator('#lock-input').fill('23092001'); await page.locator('#btn-unlock').click();
+  await page.locator('#screen-landing.active').waitFor(); await page.locator('#btn-start').click();
+  await page.locator('#screen-quiz.active').waitFor();
+  assert.match(await page.locator('#quiz-progress-label').textContent(), /ข้อ 1 \/ 10/);
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('hbd-mel-history')).length), 1);
+  assert.equal(quizPosts, 1, 'starting again must not submit an unfinished attempt');
+
 });
 
 test('gallery rapid navigation ignores late photos and respects reduced motion', async t => {

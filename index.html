@@ -1249,8 +1249,7 @@ Happy 25th birthday, P'Mel.`;
   const chapterScreens = { landing: "screen-landing", quiz: "screen-quiz", gallery: "screen-gallery", cake: "screen-cake", letter: "screen-letter" };
   const visitedChapters = new Set(["landing"]);
   let currentChapter = "landing", screenRevision = 0, quizStarted = false, quizCommitted = false;
-  const legacyQuiz = loadJSON(KEY.history, [])[0];
-  const savedProgress = loadJSON(KEY.progress, null) || (legacyQuiz && Array.isArray(legacyQuiz.items) ? { log: legacyQuiz.items, committed: true, visited: ["landing", "quiz", "gallery"] } : null);
+  const savedProgress = loadJSON(KEY.progress, null);
   if (savedProgress && Array.isArray(savedProgress.log) && savedProgress.log.length <= QUIZ.length && savedProgress.log.every((entry, i) => entry && entry.n === i + 1 && entry.q === QUIZ[i].question && typeof entry.picked === "string" && typeof entry.ok === "boolean")) {
     state.log = savedProgress.log;
     state.scorable = state.log.length; state.score = state.log.filter(entry => entry.ok).length;
@@ -1471,7 +1470,17 @@ Happy 25th birthday, P'Mel.`;
      SCREEN 1 — หน้าแรก
      ======================================================================== */
   $("btn-start").addEventListener("click", () => {
-    if (state.log.length === QUIZ.length) { goToResult(); return; }
+    // Starting again is a new attempt; Chapter navigation still reviews the
+    // current attempt's result without recording or submitting it twice.
+    if (state.log.length === QUIZ.length) {
+      stopRunawayWatch();
+      Object.assign(state, { qIndex: 0, score: 0, scorable: 0, selected: [], answered: false, textAnswers: {}, log: [], dodges: 0, prizeWon: false });
+      quizStarted = false; quizCommitted = false;
+      visitedChapters.clear(); visitedChapters.add("landing");
+      $("quiz-text-input").value = "";
+      $("quiz-text-input").removeAttribute("readonly");
+      saveQuizProgress();
+    }
     showScreen("screen-quiz", "quiz");
     if (!quizStarted) { quizStarted = true; renderQuestion(); }
   });
