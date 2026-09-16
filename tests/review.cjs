@@ -346,6 +346,36 @@ test('storage quota failure retains successive comments in memory', async t => {
   assert.equal(await page.locator('.cmt').count(), 2);
 });
 
+for (const width of [1280, 390]) test(`photo order preserves captions, viewer and export at ${width}px`, async t => {
+  const page = await setup(t, { viewport: { width, height: 900 } });
+  await page.locator('#btn-goto-gallery').evaluate(b => b.click());
+  await page.locator('#screen-gallery.active').waitFor();
+  await page.locator('.photo-order-toolbar button').click();
+  const added = page.locator('.memory-card').filter({ has: page.locator('img[src$="S__21708820_0-640.webp"]') });
+  await added.locator('summary').click();
+  await added.locator('textarea').fill('รูปใหม่ที่ย้ายแล้ว');
+  await added.locator('select').selectOption('0');
+  assert.match(await page.locator('.memory-card').first().locator('img').getAttribute('src'), /S__21708820_0/);
+  await added.locator('.caption-editor button').click();
+  await added.locator('button').first().click();
+  assert.match(await page.locator('#photo-full').getAttribute('src'), /S__21708820_0/);
+  assert.equal(await page.locator('#photo-caption').textContent(), 'รูปใหม่ที่ย้ายแล้ว');
+  await page.locator('#photo-next').click();
+  await page.waitForFunction(() => document.querySelector('#photo-full').src.includes('/m13-'));
+  await page.locator('#photo-thumbnails button').first().click();
+  await page.waitForFunction(() => document.querySelector('#photo-full').src.includes('/S__21708820_0-'));
+  await page.keyboard.press('Escape');
+  const download = page.waitForEvent('download');
+  await page.locator('#btn-export-captions').click();
+  const exported = JSON.parse(fs.readFileSync(await (await download).path(), 'utf8'));
+  assert.equal(exported.photoOrder[0], 'S__21708820_0');
+  assert.equal(new Set(exported.photoOrder).size, 34);
+  assert.equal(exported.captions.S__21708820_0, 'รูปใหม่ที่ย้ายแล้ว');
+  await page.reload();
+  assert.match(await page.locator('.memory-card').first().locator('img').getAttribute('src'), /S__21708820_0/);
+  assert.equal(await page.locator('.memory-card').first().locator('textarea').inputValue(), 'รูปใหม่ที่ย้ายแล้ว');
+});
+
 test('captions persist independently and render user text safely',async t=>{
   const page=await setup(t);await page.locator('#btn-goto-gallery').evaluate(b=>b.click());await page.locator('#screen-gallery.active').waitFor();
   const cards=page.locator('.memory-card');
