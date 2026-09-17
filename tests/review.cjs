@@ -14,6 +14,14 @@ before(async () => {
     if (!file.startsWith(root + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) { res.writeHead(404).end(); return; }
     const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.webp': 'image/webp', '.mp3': 'audio/mpeg' };
     res.setHeader('Content-Type', mime[path.extname(file)] || 'application/octet-stream');
+    if (path.extname(file) === '.mp3' && req.headers.range) {
+      const data = fs.readFileSync(file);
+      const match = /^bytes=(\d+)-(\d*)$/.exec(req.headers.range);
+      const start = Number(match?.[1] || 0), end = Math.min(Number(match?.[2] || data.length - 1), data.length - 1);
+      res.writeHead(206, { 'Accept-Ranges': 'bytes', 'Content-Range': `bytes ${start}-${end}/${data.length}`, 'Content-Length': end - start + 1 });
+      res.end(data.subarray(start, end + 1));
+      return;
+    }
     res.end(fs.readFileSync(file));
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -231,6 +239,7 @@ test('background audio retries blocked autoplay, loops, and stays off after muti
     }
   });
   await page.waitForFunction(() => document.querySelector('#btn-music').dataset.state === 'playing');
+  await page.waitForFunction(() => document.querySelector('#bgm').volume === 0.22);
   assert.deepEqual(await page.locator('#bgm').evaluate(a => [a.loop, a.volume, a.controls]), [true, 0.22, false]);
   await page.locator('#bgm').evaluate(a => { window.__loops = 0; a.addEventListener('playing', () => window.__loops++); a.currentTime = a.duration - 0.05; });
   await page.waitForFunction(() => window.__loops > 0);
@@ -253,6 +262,7 @@ test('missing audio does not block the birthday experience', async t => {
 test('real music file plays, loops at the end, and can be turned off', async t => {
   const page = await setup(t, { realMusic: true });
   await page.waitForFunction(() => document.querySelector('#btn-music').dataset.state === 'playing');
+  await page.waitForFunction(() => document.querySelector('#bgm').volume === 0.22);
   const media = await page.locator('#bgm').evaluate(audio => ({
     duration: audio.duration, loop: audio.loop, volume: audio.volume, error: audio.error
   }));
@@ -525,4 +535,33 @@ test('chapter navigation is locked before and during the quiz, including after r
   assert.equal(await page.locator('#stepbar button:enabled').count(), 0);
   await page.locator('#btn-start').click();
   assert.match(await page.locator('#quiz-progress-label').textContent(), /ข้อ 2/);
+});
+
+test('chapter soundtrack crossfades, continues through the finale, loops and respects mute', async t => {
+  const page = await setup(t, { realMusic: true });
+  const chapter = name => page.evaluate(chapter => document.dispatchEvent(new CustomEvent('chapter-change', { detail: { chapter } })), name);
+  await page.waitForFunction(() => document.querySelector('#bgm').volume === 0.22);
+  await chapter('gallery');
+  await page.waitForFunction(() => { const a = document.querySelector('#bgm-blue'); return !a.paused && a.volume > 0 && a.volume < 0.22; });
+  await page.waitForFunction(() => document.querySelector('#bgm-blue').volume === 0.22 && document.querySelector('#bgm').paused);
+  assert.match(await page.locator('#btn-music').getAttribute('aria-label'), /blue/);
+  const position = await page.locator('#bgm-blue').evaluate(a => a.currentTime);
+  await chapter('cake');
+  await chapter('letter');
+  assert.ok(await page.locator('#bgm-blue').evaluate((a, position) => a.currentTime >= position && !a.paused && a.loop, position));
+  await page.locator('#bgm-blue').evaluate(a => { a.currentTime = a.duration - 0.1; });
+  await page.waitForFunction(() => document.querySelector('#bgm-blue').currentTime < 2);
+  await chapter('quiz');
+  await page.waitForFunction(() => { const a = document.querySelector('#bgm'); return !a.paused && a.volume > 0 && a.volume < 0.22; });
+  await page.waitForFunction(() => document.querySelector('#bgm').volume === 0.22 && document.querySelector('#bgm-blue').paused);
+  await chapter('gallery');
+  await chapter('quiz');
+  await chapter('letter');
+  await page.waitForFunction(() => document.querySelector('#bgm-blue').volume === 0.22 && document.querySelector('#bgm').paused);
+  await page.locator('#btn-music').click();
+  await chapter('quiz');
+  await chapter('gallery');
+  assert.ok(await page.locator('audio').evaluateAll(list => list.every(a => a.paused && a.volume === 0)));
+  await page.locator('#btn-music').click();
+  await page.waitForFunction(() => document.querySelector('#bgm-blue').volume === 0.22 && !document.querySelector('#bgm-blue').paused);
 });
