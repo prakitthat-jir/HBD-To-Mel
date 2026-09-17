@@ -546,14 +546,21 @@ test('chapter soundtrack crossfades, continues through the finale, loops and res
   await page.waitForFunction(() => document.querySelector('#bgm-blue').volume === 0.22 && document.querySelector('#bgm').paused);
   assert.match(await page.locator('#btn-music').getAttribute('aria-label'), /blue/);
   const position = await page.locator('#bgm-blue').evaluate(a => a.currentTime);
+  assert.ok(position >= 76 && position < 81, 'blue starts at 1:16');
   await chapter('cake');
   await chapter('letter');
-  assert.ok(await page.locator('#bgm-blue').evaluate((a, position) => a.currentTime >= position && !a.paused && a.loop, position));
-  await page.locator('#bgm-blue').evaluate(a => { a.currentTime = a.duration - 0.1; });
-  await page.waitForFunction(() => document.querySelector('#bgm-blue').currentTime < 2);
+  assert.ok(await page.locator('#bgm-blue').evaluate((a, position) => a.currentTime >= position && !a.paused && !a.loop, position));
+  for (let repeat = 0; repeat < 2; repeat++) {
+    await page.locator('#bgm-blue').evaluate(a => { a.currentTime = a.duration - 0.1; });
+    await page.waitForFunction(() => {
+      const a = document.querySelector('#bgm-blue');
+      return a.currentTime >= 76 && a.currentTime < 78 && !a.paused;
+    });
+  }
   await chapter('quiz');
   await page.waitForFunction(() => { const a = document.querySelector('#bgm'); return !a.paused && a.volume > 0 && a.volume < 0.22; });
   await page.waitForFunction(() => document.querySelector('#bgm').volume === 0.22 && document.querySelector('#bgm-blue').paused);
+  assert.equal(await page.locator('#bgm-blue').evaluate(a => a.currentTime), 76);
   await chapter('gallery');
   await chapter('quiz');
   await chapter('letter');

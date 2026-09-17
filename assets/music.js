@@ -2,15 +2,16 @@
   'use strict';
   const button = document.getElementById('btn-music');
   const tracks = [
-    { audio: document.getElementById('bgm'), title: 'ยินดีที่ไม่รู้จัก — 25hours' },
-    { audio: document.getElementById('bgm-blue'), title: 'blue — yung kai (with MINNIE)' }
+    { audio: document.getElementById('bgm'), title: 'ยินดีที่ไม่รู้จัก — 25hours', startAt: 0 },
+    { audio: document.getElementById('bgm-blue'), title: 'blue — yung kai (with MINNIE)', startAt: 76 }
   ];
   const volume = 0.22, fadeDuration = 2000;
   let wantsMusic = true;
   let current = tracks[0];
   for (const track of tracks) {
     track.audio.volume = 0;
-    track.audio.loop = true;
+    // Native looping always returns to zero; blue repeats from 1:16 instead.
+    track.audio.loop = track.startAt === 0;
     track.pending = false;
     track.unavailable = false;
     track.frame = 0;
@@ -35,7 +36,7 @@
         track.frame = 0;
         if (target === 0) {
           track.audio.pause();
-          track.audio.currentTime = 0;
+          track.audio.currentTime = track.startAt;
         }
       }
     }
@@ -52,6 +53,9 @@
     track.pending = true;
     display('starting');
     try {
+      if (track.audio.currentTime < track.startAt || track.audio.ended) {
+        track.audio.currentTime = track.startAt;
+      }
       await track.audio.play();
       // A late play result must not revive a muted or superseded song.
       if (!wantsMusic || track !== current) { stop(track); return; }
@@ -93,6 +97,14 @@
   document.addEventListener('pointerup', startOnGesture, { passive: true });
   document.addEventListener('keydown', startOnGesture);
   for (const track of tracks) {
+    track.audio.addEventListener('loadedmetadata', () => {
+      if (track.audio.currentTime < track.startAt) track.audio.currentTime = track.startAt;
+    });
+    track.audio.addEventListener('ended', () => {
+      if (!track.startAt) return;
+      track.audio.currentTime = track.startAt;
+      if (wantsMusic && track === current) play(track);
+    });
     track.audio.addEventListener('playing', () => {
       if (!wantsMusic) stop(track);
       else if (track === current) display('playing');
