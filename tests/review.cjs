@@ -140,7 +140,7 @@ for (const width of [1280, 390]) test(`full birthday flow at ${width}px, single-
   await page.locator('#btn-goto-cake').click();
   await page.locator('#screen-cake.active').waitFor();
   await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.renderer==='webgl');
-  await page.locator('#cake-show').click();
+  for(let i=0;i<3;i++) await page.locator('#btn-blow').click();
   assert.equal(await page.locator('#cake-canvas').getAttribute('data-lit'), '0');
   await page.locator('#cake-continue').click();
   await page.locator('#screen-letter.active').waitFor();
@@ -153,7 +153,7 @@ for (const width of [1280, 390]) test(`full birthday flow at ${width}px, single-
   await page.locator('#btn-show-short').click();
   await page.locator('#modal-ok').click();
   await page.locator('#short-reveal.show').waitFor();
-  if (width <= 720) await page.locator('#btn-tools').click();
+  if (width <= 1200) await page.locator('#btn-tools').click();
   await page.locator('#btn-theme').click();
   assert.equal(await page.locator('html').getAttribute('data-theme'), 'sakura');
   await page.locator('#screen-letter [data-chapter-direction="-1"]').click();await page.locator('#screen-cake.active').waitFor();assert.equal(await page.locator('#screen-cake').getAttribute('data-phase'),'show');
@@ -421,101 +421,6 @@ for (const width of [1280, 390]) test(`gallery is read-only at ${width}px`, asyn
   await page.keyboard.press('Escape');
 });
 
-for(const width of [1280,390])test(`3D cake studio placement, rotation, editing and export at ${width}px`,async t=>{
-  const page=await setup(t,{viewport:{width,height:1000}});await page.locator('#btn-goto-cake').evaluate(b=>b.click());
-  await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.renderer==='webgl');
-  const canvas=page.locator('#cake-canvas');await canvas.scrollIntoViewIfNeeded();
-  await page.locator('#cake-reset-view').click();await page.waitForTimeout(350);
-  fs.mkdirSync(path.join(__dirname,'..','test-results'),{recursive:true});
-  await page.screenshot({path:path.join(__dirname,'..','test-results',`cake-3d-pristine-${width}.png`),fullPage:true});
-  assert.equal(await canvas.getAttribute('data-lit'),'0');
-  await page.locator('#cake-clear').click();assert.equal(await canvas.getAttribute('data-items'),'0');
-  await page.locator('#tab-toppings').click();
-  const clickSurface=async(x=.5,y=.55)=>{await canvas.scrollIntoViewIfNeeded();const r=await canvas.boundingBox();await canvas.click({position:{x:r.width*x,y:r.height*y}});};
-  for(const [i,type] of ['strawberry','cherry','cream','flower','bow','chocolate','candle','sprinkles'].entries()){
-    await page.locator(`[data-topping="${type}"]`).click();await page.locator('#cake-preview-use').click();await clickSurface(.46+(i%3)*.04,.53+(i%2)*.035);
-    assert.equal(Number(await canvas.getAttribute('data-items')),i+1,`place ${type} on 3D surface`);
-  }
-  await page.locator('#cake-item-scale').fill('1.4');await page.locator('#cake-item-scale').dispatchEvent('change');
-  await page.locator('#cake-item-angle').fill('90');await page.locator('#cake-item-angle').dispatchEvent('change');
-  await page.locator('#cake-move-item').click();await clickSurface(.56,.58);assert.equal(await canvas.getAttribute('data-items'),'8');
-  await page.locator('#cake-delete-item').click();assert.equal(await canvas.getAttribute('data-items'),'7');
-  await page.locator('#cake-undo').click();assert.equal(await canvas.getAttribute('data-items'),'8');
-  await canvas.scrollIntoViewIfNeeded();let r=await canvas.boundingBox();const oldYaw=Number(await canvas.getAttribute('data-yaw'));
-  await page.mouse.move(r.x+r.width*.7,r.y+r.height*.55);await page.mouse.down();await page.mouse.move(r.x+r.width*.3,r.y+r.height*.55,{steps:12});await page.mouse.up();
-  await page.waitForFunction(old=>Math.abs(Number(document.querySelector('#cake-canvas').dataset.yaw)-old)>.3,oldYaw);
-  assert.equal(await canvas.getAttribute('data-items'),'8','rotation never places a decoration');
-  await page.locator('#cake-reset-view').click();await page.waitForTimeout(350);
-  await page.locator('#tab-base').click();await page.locator('#cake-flavor').selectOption('#664035');await page.locator('#cake-size').selectOption('3');
-  await page.locator('#cake-size').selectOption('1');await page.locator('#cake-size').selectOption('2');await page.locator('#cake-flavor').selectOption('#f5a9bd');
-  assert.equal(await canvas.getAttribute('data-items'),'8','changing tiers retains placed pieces');
-  await page.locator('#tab-piping').click();await canvas.scrollIntoViewIfNeeded();r=await canvas.boundingBox();
-  await page.mouse.move(r.x+r.width*.46,r.y+r.height*.56);await page.mouse.down();await page.mouse.move(r.x+r.width*.55,r.y+r.height*.56,{steps:8});await page.mouse.up();assert.equal(await canvas.getAttribute('data-strokes'),'1');
-  await page.locator('#tab-text').click();await page.locator('#cake-message').fill('HBD Mel ♡');await page.locator('#cake-add-text').click();assert.equal(await canvas.getAttribute('data-items'),'9');
-  await page.locator('#tab-toppings').click();await page.locator('#cake-rain').click();assert.equal(await canvas.getAttribute('data-items'),'33');
-  await page.locator('#cake-gala').click();await page.waitForTimeout(700);
-  const download=page.waitForEvent('download');await page.locator('#cake-export').click();const file=await download;assert.equal(file.suggestedFilename(),'Mel-birthday-cake-3D.png');
-  const bytes=fs.readFileSync(await file.path());assert.equal(bytes.readUInt32BE(16),1600);assert.equal(bytes.readUInt32BE(20),1300);
-  fs.writeFileSync(path.join(__dirname,'..','test-results',`cake-3d-export-${width}.png`),bytes);
-  await page.screenshot({path:path.join(__dirname,'..','test-results',`cake-3d-studio-${width}.png`),fullPage:true});
-  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-  await page.locator('#cake-show').click();await page.locator('#btn-blow').click();assert.equal(await canvas.getAttribute('data-lit'),'0');await page.locator('#cake-continue').click();await page.locator('#screen-letter.active').waitFor();
-});
-
-test('3D studio touch rotation, keyboard placement and reduced motion',async t=>{
-  const page=await setup(t,{viewport:{width:390,height:1000}});await page.emulateMedia({reducedMotion:'reduce'});
-  await page.locator('#btn-goto-cake').evaluate(b=>b.click());await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.renderer==='webgl');
-  const canvas=page.locator('#cake-canvas');await canvas.scrollIntoViewIfNeeded();assert.equal(await page.locator('#cake-auto').getAttribute('aria-pressed'),'false');
-  const before=await canvas.getAttribute('data-items'),r=await canvas.boundingBox();
-  const touch=await page.context().newCDPSession(page);await touch.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
-  const x=r.x+r.width*.7,y=r.y+r.height*.55;await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});for(let i=1;i<=5;i++)await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x-i*20,y}]});await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
-  await page.waitForFunction(()=>Number(document.querySelector('#cake-canvas').dataset.yaw)<-.3);assert.equal(await canvas.getAttribute('data-items'),before);
-  await page.locator('#cake-reset-view').click();await page.locator('#tab-toppings').click();await page.locator('[data-topping="strawberry"]').click();await page.locator('#cake-preview-use').click();await canvas.scrollIntoViewIfNeeded();const tapBox=await canvas.boundingBox();
-  await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:tapBox.x+tapBox.width*.5,y:tapBox.y+tapBox.height*.55}]});await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
-  assert.equal(Number(await canvas.getAttribute('data-items')),Number(before)+1,'a touch tap places one strawberry');
-  await canvas.focus();await page.keyboard.press('Enter');assert.equal(Number(await canvas.getAttribute('data-items')),Number(before)+2);
-  await page.keyboard.press('ArrowRight');await page.waitForFunction(()=>Number(document.querySelector('#cake-canvas').dataset.yaw)>.2);
-});
-
-test('unavailable WebGL keeps a working fallback and letter navigation',async t=>{
-  const page=await setup(t,{init:()=>{const get=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){return type.startsWith('webgl')?null:get.call(this,type,...args);};}});
-  await page.locator('#btn-goto-cake').evaluate(b=>b.click());await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.renderer==='fallback'&&document.querySelector('#cake-canvas').dataset.lit==='3');
-  await page.locator('#cake-show').click();for(let i=0;i<3;i++)await page.locator('#btn-blow').click();assert.equal(await page.locator('#cake-canvas').getAttribute('data-lit'),'0');await page.locator('#cake-continue').click();await page.locator('#screen-letter.active').waitFor();
-});
-for(const width of [1280,390])test(`tier flavors, real-model catalog and individual candle showcase at ${width}px`,async t=>{
-  const page=await setup(t,{viewport:{width,height:1000}});await page.locator('#btn-goto-cake').evaluate(b=>b.click());await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.renderer==='webgl');
-  const canvas=page.locator('#cake-canvas');assert.equal(await canvas.getAttribute('data-items'),'0');assert.equal(await page.locator('#btn-blow').isVisible(),false);
-  await page.locator('#tab-base').click();await page.locator('#cake-tier').selectOption('0');
-  for(const flavor of ['#fff4dc','#a47755','#c9bfb0'])await page.locator('#cake-flavor').selectOption(flavor);
-  await page.locator('#cake-layers').selectOption('3');await page.locator('#cake-filling').selectOption('#e796b5');
-  await page.locator('#cake-tier').selectOption('1');await page.locator('#cake-flavor').selectOption('#c7d6a3');await page.locator('#cake-layers').selectOption('4');await page.locator('#cake-filling').selectOption('#c69959');
-  const layers=JSON.parse(await canvas.getAttribute('data-tiers'));assert.deepEqual(layers,[{flavor:'#c9bfb0',layers:3,filling:'#e796b5'},{flavor:'#c7d6a3',layers:4,filling:'#c69959'}]);
-  await page.locator('#cake-tier').selectOption('0');assert.equal(await page.locator('#cake-flavor').inputValue(),'#c9bfb0');assert.equal(await page.locator('#cake-layers').inputValue(),'3');
-  await page.locator('#tab-toppings').click();await page.locator('[data-topping="macaron"]').click();await page.locator('#cake-catalog').waitFor({state:'visible'});
-  assert.equal(await page.locator('#cake-preview-canvas').getAttribute('data-model'),'macaron');assert.equal(await page.locator('#cake-catalog-grid img').count(),13);
-  assert.ok(await page.locator('[data-preview-type="macaron"] img').evaluate(img=>img.complete&&img.naturalWidth===240));
-  await page.locator('#cake-preview-scale').fill('1.3');await page.locator('#cake-preview-scale').dispatchEvent('input');
-  fs.mkdirSync(path.join(__dirname,'..','test-results'),{recursive:true});await page.screenshot({path:path.join(__dirname,'..','test-results',`cake-catalog-${width}.png`),fullPage:true});
-  await page.locator('#cake-preview-use').click();await canvas.scrollIntoViewIfNeeded();let r=await canvas.boundingBox();await canvas.click({position:{x:r.width*.5,y:r.height*.55}});
-  assert.equal(await canvas.getAttribute('data-items'),'1');assert.equal(await page.locator('#cake-item-scale').inputValue(),'1.3');
-  await page.locator('.cake-inventory summary').click();await page.locator('[data-select-item]').first().click();await page.locator('#cake-copy-item').click();assert.equal(await canvas.getAttribute('data-items'),'2');
-  await page.locator('[data-delete-item]').last().click();assert.equal(await canvas.getAttribute('data-items'),'1');await page.locator('#cake-undo').click();assert.equal(await canvas.getAttribute('data-items'),'2');
-  await page.locator('#cake-preset').selectOption('cookie');await page.locator('#cake-apply-preset').click();assert.equal(await canvas.getAttribute('data-candles'),'3');
-  const before=await canvas.getAttribute('data-items');await page.locator('#cake-show').click();await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.phase==='show');
-  assert.equal(await page.locator('.gala-atmosphere').isVisible(), true);
-  await page.locator('#cake-gala').click();assert.equal(await page.locator('.gala-atmosphere').isVisible(), false);
-  await page.locator('#cake-gala').click();assert.equal(await page.locator('.gala-atmosphere').isVisible(), true);
-  assert.equal(await canvas.getAttribute('data-lit'),'3');assert.equal(await page.locator('.cake-panel').isVisible(),false);assert.equal(await page.locator('#cake-continue').isDisabled(),true);
-  await page.locator('#cake-auto').click();await page.waitForTimeout(400);await page.screenshot({path:path.join(__dirname,'..','test-results',`cake-show-${width}.png`),fullPage:true});
-  await page.locator('#cake-candle-targets button').first().click();assert.equal(await canvas.getAttribute('data-lit'),'2');
-  await page.locator('#btn-blow').click();assert.equal(await canvas.getAttribute('data-lit'),'1');
-  await page.locator('#btn-blow').click();assert.equal(await canvas.getAttribute('data-lit'),'0');assert.equal(await page.locator('#cake-continue').isEnabled(),true);
-  await page.locator('#cake-relight').click();assert.equal(await canvas.getAttribute('data-lit'),'3');
-  await page.locator('#cake-back-edit').click();assert.equal(await canvas.getAttribute('data-items'),before);assert.equal(await canvas.getAttribute('data-lit'),'0');assert.deepEqual(JSON.parse(await canvas.getAttribute('data-tiers')),layers);
-  await page.locator('#cake-clear').click();await page.locator('#cake-show').click();assert.equal(await page.locator('#cake-continue').isEnabled(),true);assert.match(await page.locator('#cake-candle-count').textContent(),/ไม่มีเทียน/);
-  await page.locator('#cake-continue').click();await page.locator('#screen-letter.active').waitFor();
-});
-
 test('chapter navigation is locked before and during the quiz, including after reload', async t => {
   const page = await setup(t);
   assert.equal(await page.locator('#stepbar button:enabled').count(), 0);
@@ -584,7 +489,7 @@ test('audio fades tolerate a frame timestamp earlier than their start', async t 
   await page.waitForFunction(() => document.querySelector('#bgm').paused && document.querySelector('#bgm-blue').volume === .22);
 });
 
-for (const width of [320, 390]) test(`mobile tools and sticky cake remain usable at ${width}px`, async t => {
+for (const width of [320, 390]) test(`mobile tools remain usable at ${width}px`, async t => {
   const page = await setup(t, {viewport:{width,height:740}});
   await page.locator('#btn-start').click();
   await page.locator('#screen-quiz.active').waitFor();
@@ -603,14 +508,64 @@ for (const width of [320, 390]) test(`mobile tools and sticky cake remain usable
   await page.screenshot({path:path.join(__dirname, '..', 'test-results', `tools-${width}.png`), animations:'disabled'});
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#btn-tools').getAttribute('aria-expanded'), 'false');
-  await page.locator('#btn-goto-cake').evaluate(b => b.click());
-  await page.waitForFunction(() => document.querySelector('#screen-cake').dataset.renderer === 'webgl');
-  await page.locator('#cake-open-catalog').scrollIntoViewIfNeeded();
-  const cake = await page.locator('#cake-viewport').boundingBox();
-  assert.ok(cake.y >= 70 && cake.y + cake.height < 740, JSON.stringify(cake));
-  await page.screenshot({path:path.join(__dirname, '..', 'test-results', `sticky-cake-${width}.png`), animations:'disabled'});
-  await page.locator('#cake-open-catalog').click();
-  await page.locator('#cake-preview-use').click();
-  await page.locator('#cake-canvas').press('Enter');
-  assert.equal(await page.locator('#cake-canvas').getAttribute('data-items'), '1');
+
+});
+
+for(const width of [320,390,768,1024,1280]) test(`ready-made gala cake at ${width}px`,async t=>{
+  const page=await setup(t,{viewport:{width,height:900}});
+  await page.locator('#btn-goto-cake').evaluate(b=>b.click());
+  await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.renderer==='webgl');
+  const canvas=page.locator('#cake-canvas');
+  assert.equal(await canvas.getAttribute('data-lit'),'3');
+  assert.ok(Number(await canvas.getAttribute('data-items'))>25);
+  assert.equal(await page.locator('#cake-catalog,.cake-panel,[data-panel],#cake-show,#cake-back-edit').count(),0);
+  assert.equal(await page.locator('.gala-atmosphere').isVisible(),true);
+  if(width<=1200){const toolbar=await page.locator('#toolbar').boundingBox(),heading=await page.locator('.cake-heading').boundingBox();assert.ok(toolbar.y+toolbar.height<=heading.y);}
+
+  assert.equal(await page.locator('#cake-continue').isDisabled(),true);
+  await page.locator('#cake-auto').click();
+  await page.locator('#cake-reset-view').click();
+  await canvas.press('ArrowRight');
+  await page.waitForFunction(()=>Number(document.querySelector('#cake-canvas').dataset.yaw)>.3);
+  const items=await canvas.getAttribute('data-items');const yaw=Number(await canvas.getAttribute('data-yaw'));
+  await canvas.scrollIntoViewIfNeeded();const r=await canvas.boundingBox();
+  await page.mouse.move(r.x+r.width*.7,r.y+r.height*.6);await page.mouse.down();await page.mouse.move(r.x+r.width*.3,r.y+r.height*.6,{steps:10});await page.mouse.up();
+  await page.waitForFunction(old=>Math.abs(Number(document.querySelector('#cake-canvas').dataset.yaw)-old)>.4,yaw);
+  assert.equal(await canvas.getAttribute('data-lit'),'3','dragging does not blow a candle');
+  assert.equal(await canvas.getAttribute('data-items'),items);
+  await page.locator('#cake-reset-view').click();await page.waitForTimeout(500);
+  await page.evaluate(()=>scrollTo(0,0));
+  fs.mkdirSync(path.join(__dirname,'..','test-results'),{recursive:true});
+  await page.screenshot({path:path.join(__dirname,'..','test-results',`gala-ready-${width}.png`),fullPage:true,animations:'disabled'});
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await canvas.press('Enter');assert.equal(await canvas.getAttribute('data-lit'),'2');
+  await page.locator('#btn-blow').click();await page.locator('#btn-blow').click();assert.equal(await canvas.getAttribute('data-lit'),'0');
+  assert.equal(await page.locator('#cake-continue').isEnabled(),true);
+  await page.locator('#cake-relight').click();assert.equal(await canvas.getAttribute('data-lit'),'3');
+  for(let i=0;i<3;i++)await page.locator('#btn-blow').click();
+  await page.locator('#cake-continue').click();await page.locator('#screen-letter.active').waitFor();
+});
+
+test('gala cake supports touch rotation and reduced motion',async t=>{
+  const page=await setup(t,{viewport:{width:390,height:844}});await page.emulateMedia({reducedMotion:'reduce'});
+  await page.locator('#btn-goto-cake').evaluate(b=>b.click());await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.renderer==='webgl');
+  assert.equal(await page.locator('#cake-auto').getAttribute('aria-pressed'),'false');
+  const touch=await page.context().newCDPSession(page);await touch.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
+  const c=page.locator('#cake-canvas');await c.scrollIntoViewIfNeeded();const r=await c.boundingBox(),x=r.x+r.width*.75,y=r.y+r.height*.65;
+  await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
+  for(let i=1;i<=5;i++)await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x-i*20,y}]});
+  await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await page.waitForFunction(()=>Number(document.querySelector('#cake-canvas').dataset.yaw)<-.3);
+  assert.equal(await c.getAttribute('data-lit'),'3');
+});
+
+test('decorated fallback can blow, relight and continue without WebGL',async t=>{
+  const page=await setup(t,{viewport:{width:390,height:844},init:()=>{const get=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){return type.startsWith('webgl')?null:get.call(this,type,...args);};}});
+  await page.locator('#btn-goto-cake').evaluate(b=>b.click());await page.waitForFunction(()=>document.querySelector('#cake-canvas').dataset.lit==='3');
+  assert.equal(await page.locator('#screen-cake').getAttribute('data-renderer'),'fallback');
+  assert.equal(await page.locator('.cake-view-controls').isVisible(),false);
+  await page.screenshot({path:path.join(__dirname,'..','test-results','gala-fallback.png'),fullPage:true});
+  await page.locator('#btn-blow').click();await page.locator('#cake-relight').click();
+  assert.equal(await page.locator('#cake-canvas').getAttribute('data-lit'),'3');
+  for(let i=0;i<3;i++)await page.locator('#btn-blow').click();await page.locator('#cake-continue').click();await page.locator('#screen-letter.active').waitFor();
 });

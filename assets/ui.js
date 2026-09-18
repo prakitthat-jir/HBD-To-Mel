@@ -4,7 +4,7 @@
   function close(restoreFocus = false) {
     toolbar.dataset.open = 'false';
     toggle.setAttribute('aria-expanded', 'false');
-    if (restoreFocus && matchMedia('(max-width:720px)').matches) toggle.focus();
+    if (restoreFocus && matchMedia('(max-width:1200px)').matches) toggle.focus();
   }
   toggle.addEventListener('click', () => {
     const open = toggle.getAttribute('aria-expanded') !== 'true';
