@@ -29,7 +29,8 @@
     cancelAnimationFrame(track.frame);
     const from = track.audio.volume, start = performance.now();
     function tick(now) {
-      const progress = Math.min(1, (now - start) / fadeDuration);
+      // RAF timestamps can precede performance.now() within the same frame.
+      const progress = Math.max(0, Math.min(1, (now - start) / fadeDuration));
       track.audio.volume = from + (target - from) * progress;
       if (progress < 1) track.frame = requestAnimationFrame(tick);
       else {

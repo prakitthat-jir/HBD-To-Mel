@@ -1,0 +1,45 @@
+/* Keep cursive descenders clear of the next line, including wrapped titles. */
+#screen-landing h1.font-script{line-height:1.55}
+#screen-landing h2.font-script{line-height:1.5;margin-top:.35rem}
+#toolbar-options{display:contents}
+#toolbar-options span,#btn-tools{display:none}
+#toolbar:not(.show) #toolbar-options{display:none}
+
+@media(max-width:720px){
+  html,body{overflow-x:clip}
+  #stepbar{left:10px;transform:translateY(-140%);gap:1px;padding:5px}
+  #stepbar.show{transform:translateY(0)}
+  #stepbar .step{width:34px;height:36px}
+  body #toolbar,body:has(#screen-cake.active) #toolbar{
+    position:fixed;top:14px;right:10px;bottom:auto;left:auto;transform:none;
+    flex-direction:row;gap:5px;padding:0;background:none;box-shadow:none;
+  }
+  #toolbar .tool{width:44px;height:44px}
+  #toolbar.show #btn-tools{display:grid}
+  #toolbar #toolbar-options{display:none}
+  #toolbar.show[data-open=true] #toolbar-options{
+    display:grid;position:absolute;top:54px;right:0;gap:4px;padding:8px;
+    width:200px;border:1px solid var(--line);border-radius:20px;
+    background:#fffaf8;box-shadow:var(--shadow-md);
+  }
+  #toolbar-options .tool{
+    display:flex;justify-content:flex-start;gap:12px;width:100%;height:46px;
+    padding:0 12px;border:0;border-radius:12px;box-shadow:none;background:transparent;
+  }
+  #toolbar-options span{display:inline;font-size:13px;color:var(--text)}
+  #toolbar-options .tool:focus-visible,#btn-tools:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+  #screen-landing h1.font-script{font-size:clamp(34px,11.5vw,48px)}
+
+  /* Keep the cake visible while scrolling through its editing tools. */
+  #screen-cake[data-phase=decorate] .cake-workspace{display:contents}
+  #screen-cake[data-phase=decorate] #cake-viewport{
+    position:sticky;top:76px;z-index:12;border:1px solid #ead0c0;
+    box-shadow:0 8px 24px #663c5426;
+  }
+  #screen-cake[data-phase=decorate] #cake-viewport #cake-canvas{height:clamp(180px,32dvh,280px)}
+  #screen-cake[data-phase=decorate] .cake-workspace-label{padding:0 8px}
+  #screen-cake[data-phase=decorate] .cake-3d-controls{margin-top:0}
+  #screen-cake[data-phase=decorate] #decorator-status{margin:0}
+  #screen-cake[data-phase=decorate] .cake-panel{scroll-margin-top:calc(92px + clamp(180px,32dvh,280px))}
+  #screen-cake[data-phase=decorate] .cake-panel :is(button,input,select,summary){scroll-margin-top:calc(92px + clamp(180px,32dvh,280px));scroll-margin-bottom:16px}
+}

@@ -153,6 +153,7 @@ for (const width of [1280, 390]) test(`full birthday flow at ${width}px, single-
   await page.locator('#btn-show-short').click();
   await page.locator('#modal-ok').click();
   await page.locator('#short-reveal.show').waitFor();
+  if (width <= 720) await page.locator('#btn-tools').click();
   await page.locator('#btn-theme').click();
   assert.equal(await page.locator('html').getAttribute('data-theme'), 'sakura');
   await page.locator('#screen-letter [data-chapter-direction="-1"]').click();await page.locator('#screen-cake.active').waitFor();assert.equal(await page.locator('#screen-cake').getAttribute('data-phase'),'show');
@@ -571,4 +572,45 @@ test('chapter soundtrack crossfades, continues through the finale, loops and res
   assert.ok(await page.locator('audio').evaluateAll(list => list.every(a => a.paused && a.volume === 0)));
   await page.locator('#btn-music').click();
   await page.waitForFunction(() => document.querySelector('#bgm-blue').volume === 0.22 && !document.querySelector('#bgm-blue').paused);
+});
+
+test('audio fades tolerate a frame timestamp earlier than their start', async t => {
+  const page = await setup(t, { realMusic: true, init: () => {
+    const raf = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = callback => raf(time => callback(time - 100));
+  }});
+  await page.waitForFunction(() => document.querySelector('#bgm').volume === .22);
+  await page.evaluate(() => document.dispatchEvent(new CustomEvent('chapter-change', {detail:{chapter:'gallery'}})));
+  await page.waitForFunction(() => document.querySelector('#bgm').paused && document.querySelector('#bgm-blue').volume === .22);
+});
+
+for (const width of [320, 390]) test(`mobile tools and sticky cake remain usable at ${width}px`, async t => {
+  const page = await setup(t, {viewport:{width,height:740}});
+  await page.locator('#btn-start').click();
+  await page.locator('#screen-quiz.active').waitFor();
+  const header = await page.locator('#toolbar').boundingBox();
+  const quiz = await page.locator('#screen-quiz .card').boundingBox();
+  const steps = await page.locator('#stepbar').boundingBox();
+  assert.ok(header.y + header.height <= quiz.y);
+  assert.ok(steps.x + steps.width <= header.x);
+  assert.equal(await page.locator('#btn-theme').isVisible(), false);
+  await page.locator('#btn-tools').click();
+  await page.locator('#btn-sfx').click();
+  assert.equal(await page.locator('#btn-tools').getAttribute('aria-expanded'), 'false');
+  await page.locator('#btn-tools').click();
+  assert.match(await page.locator('#btn-sfx').textContent(), /เสียงเอฟเฟกต์/);
+  fs.mkdirSync(path.join(__dirname, '..', 'test-results'), {recursive:true});
+  await page.screenshot({path:path.join(__dirname, '..', 'test-results', `tools-${width}.png`), animations:'disabled'});
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#btn-tools').getAttribute('aria-expanded'), 'false');
+  await page.locator('#btn-goto-cake').evaluate(b => b.click());
+  await page.waitForFunction(() => document.querySelector('#screen-cake').dataset.renderer === 'webgl');
+  await page.locator('#cake-open-catalog').scrollIntoViewIfNeeded();
+  const cake = await page.locator('#cake-viewport').boundingBox();
+  assert.ok(cake.y >= 70 && cake.y + cake.height < 740, JSON.stringify(cake));
+  await page.screenshot({path:path.join(__dirname, '..', 'test-results', `sticky-cake-${width}.png`), animations:'disabled'});
+  await page.locator('#cake-open-catalog').click();
+  await page.locator('#cake-preview-use').click();
+  await page.locator('#cake-canvas').press('Enter');
+  assert.equal(await page.locator('#cake-canvas').getAttribute('data-items'), '1');
 });

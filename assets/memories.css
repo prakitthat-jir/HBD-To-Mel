@@ -1,7 +1,6 @@
 /* Scrapbook board: paper, cards, context filters, and the connected-photo viewer. */
 #toolbar:not(.show){opacity:1;transform:none;pointer-events:auto}
 #toolbar:not(.show) .tool:not(#btn-music){display:none}
-body:has(#screen-gallery.active) #toolbar .tool:not(#btn-music){display:none}
 #screen-gallery{--paper:var(--bg1);--ink:var(--text);--olive:var(--primary);--rose:var(--primary);background-color:var(--paper);background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'160'%20height%3D'160'%3E%3Cfilter%20id%3D'grain'%3E%3CfeTurbulence%20type%3D'fractalNoise'%20baseFrequency%3D'.82'%20numOctaves%3D'3'%20stitchTiles%3D'stitch'%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D'100%25'%20height%3D'100%25'%20opacity%3D'.055'%20filter%3D'url(%23grain)'%2F%3E%3C%2Fsvg%3E"),radial-gradient(ellipse at 15% 15%,var(--primary-soft),transparent 65%);background-size:160px 160px,100% 100%;color:var(--ink);overflow:clip;min-height:100vh}
 #screen-gallery>.wrap{max-width:1080px;padding-top:28px;padding-bottom:60px}
 .scrapbook-heading{position:relative;text-align:left;padding:12px 22px 25px;border-bottom:1px solid var(--line);margin-bottom:32px}
@@ -79,7 +78,7 @@ body:has(#screen-gallery.active) #toolbar .tool:not(#btn-music){display:none}
 
 .memory-card:before{background:repeating-linear-gradient(90deg,#e9a9bc77 0 2px,#f5d0db99 2px 4px)}
 .memory-card:nth-child(3n+2):before{background:repeating-linear-gradient(45deg,#d8c3e377 0 5px,#ecddf399 5px 10px)}
-.memory-card.is-pinned{animation:collage-breathe 5s ease-in-out infinite}
+.memory-card.is-pinned{animation:collage-breathe 1s ease-in-out}
 @keyframes collage-breathe{0%,100%{translate:0 0}50%{translate:0 -4px}}
 .archive-stamp{border-color:var(--primary);outline-color:var(--line);color:var(--primary);width:95px;height:95px;font-size:9px}
 .album-intro{box-shadow:2px 8px 18px #a6537012}
