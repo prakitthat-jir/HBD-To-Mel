@@ -569,3 +569,22 @@ test('decorated fallback can blow, relight and continue without WebGL',async t=>
   assert.equal(await page.locator('#cake-canvas').getAttribute('data-lit'),'3');
   for(let i=0;i<3;i++)await page.locator('#btn-blow').click();await page.locator('#cake-continue').click();await page.locator('#screen-letter.active').waitFor();
 });
+
+for(const width of [390,1280]) test(`share preview and photographic background stickers at ${width}px`,async t=>{
+  const page=await setup(t,{viewport:{width,height:900}});
+  const html=await (await page.request.get(origin)).text();
+  assert.match(html,/property="og:image" content="https:\/\/prakitthat-jir.github.io\/HBD-To-Mel\/assets\/share-mel.jpg/);
+  assert.equal(await page.locator('meta[property="og:description"]').getAttribute('content'),'\u200b');
+  const photo=await page.request.get(new URL('assets/share-mel.jpg',origin).href);assert.equal(photo.status(),200);
+  const stickers=page.locator('#screen-landing .face-floater');assert.equal(await stickers.count(),4);
+  await stickers.locator('img').first().evaluate(i=>i.decode());
+  assert.equal(await stickers.first().evaluate(e=>getComputedStyle(e).pointerEvents),'none');
+  assert.notEqual(await stickers.locator('img').first().evaluate(e=>getComputedStyle(e).clipPath),'none');
+  assert.equal(await page.locator('#screen-landing .face-float-layer').getAttribute('aria-hidden'),'true');
+  await page.waitForTimeout(1600);
+  await page.screenshot({path:path.join(__dirname,'..','test-results',`face-landing-${width}.png`),animations:'allow'});
+  await page.locator('#btn-goto-cake').evaluate(b=>b.click());await page.waitForFunction(()=>document.querySelector('#screen-cake').dataset.renderer==='webgl');
+  await page.screenshot({path:path.join(__dirname,'..','test-results',`face-cake-${width}.png`),fullPage:true});
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.emulateMedia({reducedMotion:'reduce'});assert.equal(await page.locator('#screen-cake .face-float-layer').isVisible(),false);
+});

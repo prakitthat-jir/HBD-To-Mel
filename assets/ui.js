@@ -1,4 +1,22 @@
 (() => {
+  // Display the original photograph through a head-shaped CSS cutout: no redrawn face.
+  document.querySelectorAll('.screen').forEach(screen => {
+    const layer = document.createElement('div');
+    layer.className = 'face-float-layer';
+    layer.setAttribute('aria-hidden', 'true');
+    for (let i = 0; i < 4; i++) {
+      const sticker = document.createElement('span');
+      sticker.className = 'face-floater';
+      sticker.style.setProperty('--slot', i);
+      const crop = document.createElement('span');
+      crop.className = 'face-cutout';
+      const photo = document.createElement('img');
+      photo.src = 'assets/share-mel.jpg';photo.alt = '';photo.draggable = false;
+      photo.width = 1125;photo.height = 968;
+      crop.append(photo);sticker.append(crop);layer.append(sticker);
+    }
+    screen.prepend(layer);
+  });
   const toolbar = document.getElementById('toolbar');
   const toggle = document.getElementById('btn-tools');
   function close(restoreFocus = false) {

@@ -7,6 +7,22 @@
 #toolbar-options span,#btn-tools{display:none}
 #toolbar:not(.show) #toolbar-options{display:none}
 
+/* Scrapbook heads sit behind the cards and never intercept touches or focus. */
+.screen{position:relative;isolation:isolate}
+.screen>.wrap{position:relative;z-index:1}
+.face-float-layer{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none}
+.face-floater{position:absolute;left:2%;top:0;width:72px;opacity:.65;animation:face-float 29s linear infinite;animation-delay:-7s}
+.face-floater:nth-child(2){left:auto;right:2%;width:64px;animation-duration:34s;animation-delay:-23s}
+.face-floater:nth-child(3){left:12%;width:54px;animation-duration:38s;animation-delay:-16s}
+.face-floater:nth-child(4){left:auto;right:12%;width:60px;animation-duration:32s;animation-delay:-3s}
+.face-cutout{position:relative;display:block;width:100%;aspect-ratio:500/580;filter:drop-shadow(1px 0 #fff) drop-shadow(-1px 0 #fff) drop-shadow(0 1px #fff) drop-shadow(0 -1px #fff) drop-shadow(0 3px 3px #64324a33)}
+.face-cutout img{position:absolute;max-width:none;width:225%;height:auto;left:-56%;top:0;
+  clip-path:polygon(43% 0,55% 0,59% 3%,64% 9%,66.5% 17%,66% 25%,64% 35%,62% 43%,58% 50%,54% 54%,49% 56%,44% 55%,39% 51%,35% 46%,33% 40%,32% 47%,31% 54%,28% 59%,25.5% 58%,26% 54%,28% 51%,28.5% 44%,30% 38%,31% 34%,30% 28%,30.5% 23%,30% 17%,31% 11%,36% 6%,39% 2%);
+}
+@keyframes face-float{from{transform:translateY(110vh) rotate(-14deg)}to{transform:translateY(-140px) rotate(18deg)}}
+@media(max-width:600px){.face-floater{width:48px;left:-12px}.face-floater:nth-child(2){right:-12px;width:46px}.face-floater:nth-child(3){left:-12px;width:40px}.face-floater:nth-child(4){display:none}}
+@media(prefers-reduced-motion:reduce){.face-float-layer{display:none}}
+
 @media(max-width:1200px){
   html,body{overflow-x:clip}
   #stepbar{left:10px;transform:translateY(-140%);gap:1px;padding:5px}
