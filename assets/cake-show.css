@@ -46,3 +46,43 @@
   .cake-view-controls{gap:6px}.cake-view-controls button{padding:8px 10px}
 }
 @media(prefers-reduced-motion:reduce){.gala-beam,.gala-atmosphere>span{animation:none}}
+/* Keep the cake centered; controls support the scene without framing it. */
+#screen-cake{padding-top:80px}
+#screen-cake .cake-showcase{max-width:960px;margin:0 auto}
+.cake-heading{margin-bottom:4px}
+.cake-heading>p:last-child{font-size:11px;letter-spacing:1.5px;color:#dec4bd}
+.cake-presentation{display:flex;flex-direction:column;gap:20px;align-items:center}
+.cake-display{width:100%;padding:0;border:0;border-radius:0;background:none;box-shadow:none}
+#cake-viewport{background:radial-gradient(ellipse at 50% 80%,#bf81592a,transparent 60%)}
+#cake-canvas{height:clamp(420px,65dvh,680px)}
+#cake-status{font-size:11px;color:#d1b8b9;min-height:20px;margin:4px 0}
+.cake-view-controls button{border-color:transparent;background:transparent;color:#d9c3c4;font-size:11px;padding:8px 12px;border-radius:12px}
+.cake-view-controls button:hover,.cake-view-controls button:focus-visible{background:#fff4e912;border-color:#e4b98055}
+.cake-view-controls button[aria-pressed=true]{background:transparent;color:#ffe0a5}
+.cake-view-controls label{font-size:11px;color:#d9c3c4}
+.cake-view-controls input{width:72px;accent-color:#c5a086}
+.cake-wish-card{width:100%;max-width:600px;padding:0 12px;border:0;border-radius:0;background:none}
+.cake-eyebrow,.cake-invitation{display:none}
+#cake-show-title{font-size:24px;line-height:1.6;color:#efd8bc;margin:0}
+#cake-show-title br{display:none}
+#cake-candle-count{font-size:12px;min-height:22px;margin:6px 0 12px;color:#d9c3c4}
+.cake-wish-card .btn{width:auto;margin:4px;min-height:44px;padding:10px 16px;font-size:12px;border:1px solid #e4b98044;background:transparent;color:#ecd6ca;box-shadow:none}
+.cake-wish-card #btn-blow{background:#ebc99e;color:#40283a;border-color:#ebc99e}
+#screen-cake .chapter-navigation{margin-top:20px}
+#screen-cake .chapter-navigation .btn{background:transparent;color:#d9c3c4;border-color:transparent;box-shadow:none;font-size:11px}
+body:has(#screen-cake.active) #stepbar{background:#38243de8;border-color:#e4b98022;box-shadow:none}
+body:has(#screen-cake.active) #stepbar .step.now{background:#ead2b326;transform:none}
+body:has(#screen-cake.active) #stepbar .step small{background:#49344d;color:#ead2b3}
+body:has(#screen-cake.active) #toolbar .tool{background:#38243de8;border-color:#e4b98022;box-shadow:none}
+body:has(#screen-cake.active) .face-float-layer{opacity:.25}
+@media(max-width:760px){
+  #screen-cake{padding:78px 12px 40px}
+  .cake-presentation{gap:14px}
+  #cake-canvas{height:clamp(350px,105vw,520px)}
+  .cake-wish-card{padding:0}
+  #cake-show-title{font-size:22px}
+  .cake-wish-card .btn{padding:9px 12px;margin:3px;font-size:11px}
+}
+
+body:has(#screen-cake.active) #toolbar .tool,body:has(#screen-cake.active) #toolbar-options span{color:#ecd6ca}
+body:has(#screen-cake.active) #toolbar[data-open=true] #toolbar-options{background:#38243d;border-color:#e4b98033}

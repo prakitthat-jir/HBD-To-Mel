@@ -40,7 +40,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Itim&family=Mitr:wght@300;400;500;600&family=Pacifico&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500&family=Itim&family=Mitr:wght@300;400;500;600&family=Pacifico&display=swap" rel="stylesheet" />
 
 <style>
 /* ==========================================================================
@@ -533,18 +533,33 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 .envelope.open .env-paper{ transform: translateY(-80%) }
 
 #letter-main-text{
-  --letter-line-height:2em;
-  font-size:clamp(1rem, 2.5vw, 1.125rem);
+  --letter-line-height:1.6em;
+  font-family:'Caveat','Itim',cursive;
+  font-size:clamp(21px, 2.2vw, 24px);
+  font-weight:400;
+  color:#563a40;
+  text-wrap:pretty;
   line-height:var(--letter-line-height);
   white-space:pre-line;
   overflow-wrap:break-word;
-  background-image:linear-gradient(to bottom, transparent calc(var(--letter-line-height) - 1px), rgba(200,120,140,.2) calc(var(--letter-line-height) - 1px));
+  background-image:linear-gradient(to bottom, transparent calc(var(--letter-line-height) - 1px), rgba(200,120,140,.09) calc(var(--letter-line-height) - 1px));
   background-size:100% var(--letter-line-height);
   background-position:0 -.2em;
 }
 .letter-paper{
   background: linear-gradient(180deg,#fffdf8,#fff7f1);
   border:1px solid rgba(200,120,140,.28);
+}
+#screen-letter > .wrap{max-width:660px}
+#screen-letter .letter-paper{padding:clamp(24px,5vw,56px);border-radius:24px}
+#screen-letter .letter-heading{margin-bottom:28px}
+#screen-letter .letter-heading h2{font-size:clamp(28px,5vw,36px);line-height:1.5}
+#screen-letter .letter-heading p{font-size:clamp(24px,4vw,30px);line-height:1.5}
+#screen-letter .letter-heading > div{font-size:22px;margin-bottom:12px}
+@media(max-width:480px){
+  #screen-letter{padding-left:12px;padding-right:12px}
+  #screen-letter .letter-paper{padding:28px 22px;border-radius:22px}
+  #screen-letter .letter-heading{margin-bottom:24px}
 }
 
 /* ==========================================================================
@@ -575,7 +590,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 .chapter-navigation{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:28px auto 0}.chapter-navigation .btn{font-size:12px;padding:10px 15px}.step{position:relative;cursor:pointer}.step small{position:absolute;right:1px;bottom:0;font-size:9px;background:var(--primary-soft);border-radius:8px;padding:0 3px}.step:focus-visible{outline:2px solid var(--primary);outline-offset:3px}.step:disabled{cursor:not-allowed}
 </style>
 <link rel="stylesheet" href="assets/memories.css?v=20260918-ui" />
-<link rel="stylesheet" href="assets/cake-show.css?v=20260918-show" />
+<link rel="stylesheet" href="assets/cake-show.css?v=20260919-focus" />
 <link rel="stylesheet" href="assets/ui.css?v=20260918-stickers" />
 </head>
 <body class="antialiased">
@@ -806,7 +821,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
   <div class="gala-atmosphere" aria-hidden="true"><i class="gala-beam"></i><i class="gala-beam"></i><i class="gala-beam"></i><span style="--x:9%;--y:5%;--size:8px;--delay:-0s;--duration:6s"></span><span style="--x:46%;--y:28%;--size:19px;--delay:-0.7s;--duration:7s"></span><span style="--x:83%;--y:51%;--size:30px;--delay:-1.4s;--duration:8s"></span><span style="--x:20%;--y:74%;--size:41px;--delay:-2.0999999999999996s;--duration:9s"></span><span style="--x:57%;--y:97%;--size:18px;--delay:-2.8s;--duration:10s"></span><span style="--x:94%;--y:20%;--size:29px;--delay:-3.5s;--duration:6s"></span><span style="--x:31%;--y:43%;--size:40px;--delay:-4.199999999999999s;--duration:7s"></span><span style="--x:68%;--y:66%;--size:17px;--delay:-4.8999999999999995s;--duration:8s"></span><span style="--x:5%;--y:89%;--size:28px;--delay:-5.6s;--duration:9s"></span><span style="--x:42%;--y:12%;--size:39px;--delay:-6.3s;--duration:10s"></span><span style="--x:79%;--y:35%;--size:16px;--delay:-7s;--duration:6s"></span><span style="--x:16%;--y:58%;--size:27px;--delay:-7.699999999999999s;--duration:7s"></span><span style="--x:53%;--y:81%;--size:38px;--delay:-8.399999999999999s;--duration:8s"></span><span style="--x:90%;--y:4%;--size:15px;--delay:-9.1s;--duration:9s"></span><span style="--x:27%;--y:27%;--size:26px;--delay:-9.799999999999999s;--duration:10s"></span><span style="--x:64%;--y:50%;--size:37px;--delay:-10.5s;--duration:6s"></span><span style="--x:1%;--y:73%;--size:14px;--delay:-11.2s;--duration:7s"></span><span style="--x:38%;--y:96%;--size:25px;--delay:-11.899999999999999s;--duration:8s"></span><span style="--x:75%;--y:19%;--size:36px;--delay:-12.6s;--duration:9s"></span><span style="--x:12%;--y:42%;--size:13px;--delay:-13.299999999999999s;--duration:10s"></span><span style="--x:49%;--y:65%;--size:24px;--delay:-14s;--duration:6s"></span><span style="--x:86%;--y:88%;--size:35px;--delay:-14.7s;--duration:7s"></span><span style="--x:23%;--y:11%;--size:12px;--delay:-15.399999999999999s;--duration:8s"></span><span style="--x:60%;--y:34%;--size:23px;--delay:-16.099999999999998s;--duration:9s"></span><span style="--x:97%;--y:57%;--size:34px;--delay:-16.799999999999997s;--duration:10s"></span><span style="--x:34%;--y:80%;--size:11px;--delay:-17.5s;--duration:6s"></span><span style="--x:71%;--y:3%;--size:22px;--delay:-18.2s;--duration:7s"></span><span style="--x:8%;--y:26%;--size:33px;--delay:-18.9s;--duration:8s"></span></div>
 
   <div class="wrap cake-showcase">
-    <header class="cake-heading"><p class="chip">Chapter 3 · A wish for you</p><h2 id="cake-title">เค้กก้อนนี้ เป็นของเธอ 🎂</h2><p>สตรอเบอร์รี่ ครีม และความตั้งใจดี ๆ สำหรับวันพิเศษของเมล</p></header>
+    <header class="cake-heading"><p>Chapter 3 · A wish for you</p></header>
     <div class="cake-presentation">
       <div class="cake-display">
         <div id="cake-viewport"><canvas id="cake-canvas" width="800" height="650" tabindex="0" aria-label="เค้กวันเกิดสามมิติ ลากหรือลูกศรเพื่อหมุน Enter เพื่อเป่าเทียน"></canvas></div>
@@ -847,7 +862,7 @@ body.lights-off .topper-sign{ box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 22px rg
 
     <div id="letter-content" class="hidden">
       <div class="card letter-paper p-6 md:p-9 text-left">
-        <div class="text-center mb-4">
+        <div class="letter-heading text-center">
           <div class="text-3xl mb-2">🎉 🎂 🎉</div>
           <h2 class="font-script text-4xl md:text-5xl" style="color:var(--primary)">Happy Birthday</h2>
           <p class="font-script text-3xl md:text-4xl mt-1" style="color:var(--primary)">to Mel!</p>
